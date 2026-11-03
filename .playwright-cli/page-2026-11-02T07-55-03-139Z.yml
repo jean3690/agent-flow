@@ -1,0 +1,69 @@
+- generic [ref=e38]:
+  - banner [ref=e39]:
+    - generic [ref=e40]:
+      - generic [ref=e41]: AF
+      - generic [ref=e42]: AgentFlow
+      - generic [ref=e43]: 工作流
+    - generic [ref=e44]:
+      - generic [ref=e45]: 管理员
+      - button "退出" [ref=e46] [cursor=pointer]
+  - main [ref=e48]:
+    - generic [ref=e49]:
+      - generic [ref=e50]:
+        - heading "工作流" [level=1] [ref=e51]
+        - paragraph [ref=e52]: 编排、运行、查看执行记录
+      - generic [ref=e53]:
+        - textbox "搜索名称" [ref=e56]
+        - button "知识库" [ref=e58] [cursor=pointer]
+        - button "执行记录" [ref=e60] [cursor=pointer]
+        - button "模型配置" [ref=e62] [cursor=pointer]
+        - button "导入" [ref=e64] [cursor=pointer]
+        - button "新建工作流" [ref=e66] [cursor=pointer]
+    - generic [ref=e68]:
+      - generic [ref=e70]:
+        - table [ref=e72]:
+          - rowgroup [ref=e79]:
+            - row [ref=e80]:
+              - columnheader "名称" [ref=e81]
+              - columnheader "节点" [ref=e83]
+              - columnheader "版本" [ref=e85]
+              - columnheader "更新时间" [ref=e87]
+              - columnheader "操作" [ref=e89]
+        - table [ref=e95]:
+          - rowgroup [ref=e102]:
+            - row [ref=e103]:
+              - cell "dsfds fds" [ref=e104]:
+                - generic [ref=e105]:
+                  - text: dsfds
+                  - generic [ref=e106]: fds
+              - cell "0" [ref=e107]
+              - cell "v1" [ref=e109]
+              - cell "2026-11-02 15:45" [ref=e111]
+              - cell [ref=e113]:
+                - generic [ref=e114]:
+                  - button "编辑" [ref=e115] [cursor=pointer]
+                  - button "导出" [ref=e117] [cursor=pointer]
+                  - button "复制" [ref=e119] [cursor=pointer]
+                  - button "删除" [ref=e121] [cursor=pointer]
+      - generic [ref=e124]:
+        - button "上一页" [disabled] [ref=e125]
+        - list [ref=e126]:
+          - listitem "第 1 页" [ref=e127]: "1"
+        - button "下一页" [disabled] [ref=e128]
+  - dialog "新建工作流" [ref=e130]:
+    - generic [active] [ref=e131]:
+      - banner [ref=e132]:
+        - heading "新建工作流" [level=2] [ref=e133]
+        - button "关闭此对话框" [ref=e134] [cursor=pointer]
+      - generic [ref=e139]:
+        - generic [ref=e140]:
+          - generic [ref=e141]: 名称
+          - textbox "名称" [ref=e145]:
+            - /placeholder: 例如：文章摘要流水线
+        - generic [ref=e146]:
+          - generic [ref=e147]: 描述
+          - textbox "描述" [ref=e150]:
+            - /placeholder: 这条工作流解决什么问题
+      - contentinfo [ref=e151]:
+        - button "取消" [ref=e152] [cursor=pointer]
+        - button "创建并编辑" [ref=e154] [cursor=pointer]

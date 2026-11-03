@@ -1,0 +1,88 @@
+- generic [ref=e88]:
+  - banner [ref=e89]:
+    - generic [ref=e90]:
+      - button "← 工作流" [ref=e91] [cursor=pointer]
+      - generic [ref=e93]: AgentFlow
+      - generic [ref=e94]: 知识库
+    - generic [ref=e95]:
+      - generic [ref=e96]: 管理员
+      - button "退出" [ref=e97] [cursor=pointer]
+  - main [ref=e99]:
+    - complementary [ref=e100]:
+      - generic [ref=e101]:
+        - generic [ref=e102]: 知识库
+        - button "新建" [ref=e103] [cursor=pointer]
+      - generic [ref=e106] [cursor=pointer]:
+        - generic [ref=e107]: 售后手册
+        - generic [ref=e108]: 2 篇 / 4 分片
+    - generic [ref=e109]:
+      - generic [ref=e110]:
+        - generic [ref=e111]:
+          - generic [ref=e112]: 售后手册
+          - generic [ref=e113]: 退换货与配送说明
+          - generic [ref=e114]: mock / text-embedding-3-small · chunk 200 / overlap 40
+        - generic [ref=e115]:
+          - button "导入文本" [ref=e116] [cursor=pointer]
+          - button "上传文件" [ref=e118] [cursor=pointer]
+          - button "删除" [ref=e120] [cursor=pointer]
+      - generic [ref=e122]:
+        - textbox "输入问题，测试检索效果" [ref=e125]: 退款多久到账
+        - generic [ref=e127]:
+          - button "减少数值" [ref=e128] [cursor=pointer]
+          - button "增加数值" [ref=e132] [cursor=pointer]
+          - spinbutton [ref=e138]: "4"
+        - button "检索" [ref=e139] [cursor=pointer]
+      - generic [ref=e223]:
+        - generic [ref=e224]:
+          - generic [ref=e225]: 售后服务说明
+          - generic [ref=e226]: score 0.110
+        - paragraph [ref=e227]: 退换货政策：自签收之日起 7 天内可无理由退货，商品需保持完好。 退款会在审核通过后 3 个工作日内原路退回，具体到账时间以银行为准。 配送说明：默认使用顺丰快递，偏远地区 5-7 天送达。 满 99 元包邮，未满 99 元收取 10 元运费。 发票说明：支持电子发票，下单后可在订单详情页申请，发票将在 24 小时内开出。
+      - generic [ref=e143]:
+        - table [ref=e145]:
+          - rowgroup [ref=e153]:
+            - row [ref=e154]:
+              - columnheader "文档" [ref=e155]
+              - columnheader "状态" [ref=e157]
+              - columnheader "字符" [ref=e159]
+              - columnheader "分片" [ref=e161]
+              - columnheader "创建时间" [ref=e163]
+              - columnheader "操作" [ref=e165]
+        - table [ref=e171]:
+          - rowgroup [ref=e179]:
+            - row [ref=e180]:
+              - cell "会员与积分规则" [ref=e181]
+              - cell "INDEXED" [ref=e183]
+              - cell "403" [ref=e187]
+              - cell "3" [ref=e189]
+              - cell "2026/11/2 10:20:06" [ref=e191]
+              - cell [ref=e193]:
+                - generic [ref=e194]:
+                  - button "预览" [ref=e195] [cursor=pointer]
+                  - button "建立索引" [ref=e197] [cursor=pointer]
+                  - button "删除" [ref=e199] [cursor=pointer]
+            - row [ref=e201]:
+              - cell "售后服务说明" [ref=e202]
+              - cell "INDEXED" [ref=e204]
+              - cell "164" [ref=e208]
+              - cell "1" [ref=e210]
+              - cell "2026/11/2 10:19:14" [ref=e212]
+              - cell [ref=e214]:
+                - generic [ref=e215]:
+                  - button "预览" [ref=e216] [cursor=pointer]
+                  - button "建立索引" [ref=e218] [cursor=pointer]
+                  - button "删除" [ref=e220] [cursor=pointer]
+  - dialog "分片预览 · 会员与积分规则" [ref=e229]:
+    - generic [active] [ref=e230]:
+      - banner [ref=e231]:
+        - heading "分片预览 · 会员与积分规则" [level=2] [ref=e232]
+        - button "关闭此对话框" [ref=e233] [cursor=pointer]
+      - generic [ref=e238]:
+        - generic [ref=e239]:
+          - generic [ref=e240]: "#1 · 168 字符"
+          - paragraph [ref=e241]: 会员等级规则：普通会员累计消费满 500 元升级为银卡会员，满 2000 元升级为金卡会员，满 5000 元升级为黑卡会员。等级每自然年重新计算一次，降级前会提前 30 天短信通知。 积分获取：每消费 1 元累计 1 积分，金卡会员享受 1.5 倍积分，黑卡会员享受 2 倍积分。积分在订单完成后 7 天入账，退货订单会扣回对应积分。
+        - generic [ref=e242]:
+          - generic [ref=e243]: "#2 · 187 字符"
+          - paragraph [ref=e244]: 会员享受 2 倍积分。积分在订单完成后 7 天入账，退货订单会扣回对应积分。 积分使用：100 积分可抵扣 1 元，单笔订单最多抵扣订单金额的 30%。积分有效期为 24 个月，过期未使用自动清零，清零前可在会员中心查看即将过期的积分。 生日权益：银卡及以上会员在生日当月可领取一张 20 元无门槛券，黑卡会员额外获得一次免运费权益。权益需在生日当月内领取，过期不补发。
+        - generic [ref=e245]:
+          - generic [ref=e246]: "#3 · 124 字符"
+          - paragraph [ref=e247]: 门槛券，黑卡会员额外获得一次免运费权益。权益需在生日当月内领取，过期不补发。 发票说明：支持电子发票和纸质发票，电子发票在申请后 24 小时内发送至预留邮箱，纸质发票需要 7 个工作日邮寄。发票抬头和税号可在下单时填写，已开票订单不支持修改抬头。

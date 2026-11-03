@@ -1,0 +1,126 @@
+CREATE TABLE IF NOT EXISTS app_user (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  username VARCHAR(64) NOT NULL UNIQUE,
+  password VARCHAR(128) NOT NULL,
+  nickname VARCHAR(64),
+  role VARCHAR(32) NOT NULL DEFAULT 'ADMIN',
+  avatar VARCHAR(255),
+  deleted TINYINT NOT NULL DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS workflow (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(128) NOT NULL,
+  description VARCHAR(512),
+  engine_type VARCHAR(32) NOT NULL DEFAULT 'langgraph',
+  flow_data CLOB NOT NULL,
+  status TINYINT NOT NULL DEFAULT 1,
+  version INT NOT NULL DEFAULT 1,
+  user_id BIGINT,
+  deleted TINYINT NOT NULL DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS node_definition (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  type VARCHAR(64) NOT NULL UNIQUE,
+  name VARCHAR(64) NOT NULL,
+  category VARCHAR(32) NOT NULL,
+  icon VARCHAR(64),
+  color VARCHAR(32),
+  description VARCHAR(255),
+  config_schema CLOB,
+  sort INT NOT NULL DEFAULT 0,
+  enabled TINYINT NOT NULL DEFAULT 1,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS execution_record (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  run_id VARCHAR(64) NOT NULL UNIQUE,
+  workflow_id BIGINT NOT NULL,
+  workflow_name VARCHAR(128),
+  user_id BIGINT,
+  status VARCHAR(16) NOT NULL,
+  input_data CLOB,
+  output_data CLOB,
+  error_message CLOB,
+  node_count INT NOT NULL DEFAULT 0,
+  elapsed_ms BIGINT DEFAULT 0,
+  started_at TIMESTAMP,
+  finished_at TIMESTAMP,
+  deleted TINYINT NOT NULL DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS execution_node_log (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  run_id VARCHAR(64) NOT NULL,
+  workflow_id BIGINT NOT NULL,
+  node_id VARCHAR(64) NOT NULL,
+  node_type VARCHAR(64),
+  node_name VARCHAR(128),
+  seq INT NOT NULL DEFAULT 0,
+  status VARCHAR(16) NOT NULL,
+  input_data CLOB,
+  output_data CLOB,
+  error_message CLOB,
+  elapsed_ms BIGINT DEFAULT 0,
+  started_at TIMESTAMP,
+  finished_at TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS llm_provider_config (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  provider VARCHAR(32) NOT NULL UNIQUE,
+  base_url VARCHAR(255),
+  api_key VARCHAR(512),
+  enabled TINYINT NOT NULL DEFAULT 1,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS knowledge_base (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(128) NOT NULL,
+  description VARCHAR(512),
+  embedding_provider VARCHAR(32) NOT NULL DEFAULT 'mock',
+  embedding_model VARCHAR(64) NOT NULL DEFAULT 'text-embedding-3-small',
+  chunk_size INT NOT NULL DEFAULT 600,
+  chunk_overlap INT NOT NULL DEFAULT 80,
+  user_id BIGINT,
+  deleted TINYINT NOT NULL DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS knowledge_document (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  knowledge_base_id BIGINT NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  source_type VARCHAR(16) NOT NULL DEFAULT 'TEXT',
+  content CLOB NOT NULL,
+  char_count INT NOT NULL DEFAULT 0,
+  status VARCHAR(16) NOT NULL DEFAULT 'PENDING',
+  chunk_count INT NOT NULL DEFAULT 0,
+  error_message VARCHAR(1024),
+  deleted TINYINT NOT NULL DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS knowledge_chunk (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  knowledge_base_id BIGINT NOT NULL,
+  document_id BIGINT NOT NULL,
+  chunk_index INT NOT NULL DEFAULT 0,
+  content CLOB NOT NULL,
+  char_count INT NOT NULL DEFAULT 0,
+  embedding CLOB,
+  embedding_model VARCHAR(64),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

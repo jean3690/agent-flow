@@ -1,0 +1,501 @@
+[
+  {
+    "type": "input",
+    "name": "开始",
+    "category": "基础",
+    "icon": "VideoPlay",
+    "color": "#10b981",
+    "description": "工作流入口，接收运行时输入参数",
+    "sort": 10,
+    "configSchema": [
+      {
+        "key": "variables",
+        "label": "声明输入变量",
+        "type": "tags",
+        "default": [],
+        "placeholder": "回车添加变量名，如 topic",
+        "help": "仅用于提示，缺少时会打印告警日志"
+      }
+    ]
+  },
+  {
+    "type": "llm",
+    "name": "大模型",
+    "category": "AI",
+    "icon": "MagicStick",
+    "color": "#6366f1",
+    "description": "调用 OpenAI / DeepSeek / 通义千问 / 智谱等模型",
+    "sort": 20,
+    "configSchema": [
+      {
+        "key": "provider",
+        "label": "模型厂商",
+        "type": "select",
+        "options": [
+          {
+            "label": "OpenAI",
+            "value": "openai"
+          },
+          {
+            "label": "DeepSeek",
+            "value": "deepseek"
+          },
+          {
+            "label": "通义千问",
+            "value": "qwen"
+          },
+          {
+            "label": "智谱 GLM",
+            "value": "zhipu"
+          },
+          {
+            "label": "AiPing",
+            "value": "aiping"
+          },
+          {
+            "label": "Mock（本地演示）",
+            "value": "mock"
+          }
+        ],
+        "default": "openai"
+      },
+      {
+        "key": "model",
+        "label": "模型",
+        "type": "select",
+        "options": [
+          {
+            "label": "OpenAI / gpt-4o-mini",
+            "value": "gpt-4o-mini"
+          },
+          {
+            "label": "OpenAI / gpt-4o",
+            "value": "gpt-4o"
+          },
+          {
+            "label": "DeepSeek / deepseek-chat",
+            "value": "deepseek-chat"
+          },
+          {
+            "label": "通义 / qwen-plus",
+            "value": "qwen-plus"
+          },
+          {
+            "label": "智谱 / glm-4-flash",
+            "value": "glm-4-flash"
+          },
+          {
+            "label": "Mock / agentflow-mock",
+            "value": "agentflow-mock"
+          }
+        ],
+        "default": "gpt-4o-mini"
+      },
+      {
+        "key": "systemPrompt",
+        "label": "系统提示词",
+        "type": "textarea",
+        "rows": 3,
+        "default": ""
+      },
+      {
+        "key": "prompt",
+        "label": "用户提示词",
+        "type": "textarea",
+        "rows": 5,
+        "default": "{{input}}"
+      },
+      {
+        "key": "temperature",
+        "label": "温度",
+        "type": "number",
+        "min": 0,
+        "max": 2,
+        "step": 0.1,
+        "default": 0.7
+      },
+      {
+        "key": "maxTokens",
+        "label": "最大 Token",
+        "type": "number",
+        "min": 1,
+        "max": 32000,
+        "default": 2048
+      },
+      {
+        "key": "skillIds",
+        "label": "挂载技能",
+        "type": "multiselect",
+        "options": [
+          {
+            "label": "结构化摘要",
+            "value": "summarize"
+          },
+          {
+            "label": "中英互译",
+            "value": "translate"
+          },
+          {
+            "label": "长文写作",
+            "value": "writing"
+          }
+        ],
+        "default": []
+      }
+    ]
+  },
+  {
+    "type": "react_agent",
+    "name": "智能体",
+    "category": "AI",
+    "icon": "Cpu",
+    "color": "#8b5cf6",
+    "description": "带工具的 ReAct 智能体：可检索知识库、抓取网页、读取输入与加载技能",
+    "sort": 22,
+    "configSchema": [
+      {
+        "key": "provider",
+        "label": "模型厂商",
+        "type": "select",
+        "default": "openai",
+        "options": [
+          { "label": "OpenAI", "value": "openai" },
+          { "label": "DeepSeek", "value": "deepseek" },
+          { "label": "通义千问", "value": "qwen" },
+          { "label": "智谱 GLM", "value": "zhipu" },
+          { "label": "AiPing", "value": "aiping" },
+          { "label": "Mock（本地演示）", "value": "mock" }
+        ]
+      },
+      { "key": "model", "label": "模型", "type": "input", "default": "gpt-4o-mini" },
+      { "key": "systemPrompt", "label": "系统提示词", "type": "textarea", "rows": 3, "default": "你是一个会使用工具的助手。" },
+      { "key": "prompt", "label": "任务", "type": "textarea", "rows": 4, "default": "{{input}}" },
+      { "key": "maxSteps", "label": "最大步数", "type": "number", "min": 1, "max": 8, "step": 1, "default": 4 },
+      { "key": "knowledgeBaseId", "label": "知识库（供知识检索工具）", "type": "knowledge", "default": "" },
+      {
+        "key": "toolIds",
+        "label": "启用工具",
+        "type": "multiselect",
+        "default": ["read_input"],
+        "options": [
+          { "label": "读取输入", "value": "read_input" },
+          { "label": "加载技能", "value": "load_skill" },
+          { "label": "知识检索", "value": "knowledge_search" },
+          { "label": "网页抓取", "value": "web_fetch" }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "image_generate",
+    "name": "图片生成",
+    "category": "AI",
+    "icon": "Picture",
+    "color": "#f97316",
+    "description": "调用 OpenAI 兼容图像接口生成图片，无 Key 时生成占位图",
+    "sort": 26,
+    "configSchema": [
+      {
+        "key": "provider",
+        "label": "服务商",
+        "type": "select",
+        "default": "mock",
+        "options": [
+          { "label": "Mock（占位图片）", "value": "mock" },
+          { "label": "OpenAI", "value": "openai" },
+          { "label": "AiPing", "value": "aiping" }
+        ]
+      },
+      { "key": "model", "label": "模型", "type": "input", "default": "gpt-image-1" },
+      { "key": "prompt", "label": "画面描述", "type": "textarea", "rows": 4, "default": "{{input}}" },
+      {
+        "key": "size",
+        "label": "尺寸",
+        "type": "select",
+        "default": "1024x1024",
+        "options": [
+          { "label": "1024x1024", "value": "1024x1024" },
+          { "label": "1024x1536", "value": "1024x1536" },
+          { "label": "1536x1024", "value": "1536x1024" }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "vision_analyze",
+    "name": "视觉理解",
+    "category": "AI",
+    "icon": "View",
+    "color": "#e11d48",
+    "description": "把上游图片交给多模态模型分析",
+    "sort": 27,
+    "configSchema": [
+      {
+        "key": "provider",
+        "label": "模型厂商",
+        "type": "select",
+        "default": "openai",
+        "options": [
+          { "label": "OpenAI", "value": "openai" },
+          { "label": "DeepSeek", "value": "deepseek" },
+          { "label": "通义千问", "value": "qwen" },
+          { "label": "智谱 GLM", "value": "zhipu" },
+          { "label": "AiPing", "value": "aiping" },
+          { "label": "Mock（本地演示）", "value": "mock" }
+        ]
+      },
+      { "key": "model", "label": "模型", "type": "input", "default": "gpt-4o-mini" },
+      { "key": "imageUrl", "label": "图片地址", "type": "textarea", "rows": 2, "default": "", "help": "留空自动取上游图片输出，也可写 {{img.imageUrl}}" },
+      { "key": "prompt", "label": "分析要求", "type": "textarea", "rows": 3, "default": "描述这张图片" }
+    ]
+  },
+  {
+    "type": "video_generate",
+    "name": "视频生成",
+    "category": "AI",
+    "icon": "Film",
+    "color": "#a855f7",
+    "description": "文生视频（提交任务+轮询）；无 Key 时生成占位海报",
+    "sort": 28,
+    "configSchema": [
+      {
+        "key": "provider",
+        "label": "服务商",
+        "type": "select",
+        "default": "mock",
+        "options": [
+          { "label": "Mock（占位海报）", "value": "mock" },
+          { "label": "OpenAI", "value": "openai" },
+          { "label": "AiPing", "value": "aiping" }
+        ]
+      },
+      { "key": "model", "label": "模型", "type": "input", "default": "video-01" },
+      { "key": "prompt", "label": "画面描述", "type": "textarea", "rows": 4, "default": "{{input}}" }
+    ]
+  },
+  {
+    "type": "knowledge",
+    "name": "知识检索",
+    "category": "AI",
+    "icon": "Collection",
+    "color": "#0ea5e9",
+    "description": "从知识库检索相关片段，供下游提示词引用",
+    "sort": 25,
+    "configSchema": [
+      {
+        "key": "knowledgeBaseId",
+        "label": "知识库",
+        "type": "knowledge",
+        "default": ""
+      },
+      {
+        "key": "query",
+        "label": "检索语句",
+        "type": "textarea",
+        "rows": 3,
+        "default": "{{input}}"
+      },
+      {
+        "key": "topK",
+        "label": "返回片段数",
+        "type": "number",
+        "min": 1,
+        "max": 10,
+        "step": 1,
+        "default": 4
+      }
+    ]
+  },
+  {
+    "type": "condition",
+    "name": "条件分支",
+    "category": "逻辑",
+    "icon": "Switch",
+    "color": "#f59e0b",
+    "description": "按表达式结果路由到不同分支",
+    "sort": 30,
+    "configSchema": [
+      {
+        "key": "expression",
+        "label": "条件表达式",
+        "type": "textarea",
+        "rows": 3,
+        "default": "outputs.llm1.text != ''",
+        "placeholder": "例如 outputs.llm1.text != ''",
+        "help": "可用 outputs / vars / input，支持比较、布尔、in、len()"
+      },
+      {
+        "key": "trueBranch",
+        "label": "条件为真 → 节点",
+        "type": "node",
+        "default": ""
+      },
+      {
+        "key": "falseBranch",
+        "label": "条件为假 → 节点",
+        "type": "node",
+        "default": ""
+      }
+    ]
+  },
+  {
+    "type": "template",
+    "name": "文本模板",
+    "category": "基础",
+    "icon": "Document",
+    "color": "#0ea5e9",
+    "description": "用变量拼装文本，作为下游提示词或输出",
+    "sort": 40,
+    "configSchema": [
+      {
+        "key": "template",
+        "label": "模板",
+        "type": "textarea",
+        "rows": 5,
+        "default": "{{input}}",
+        "help": "支持 {{nodeId.text}}、{{vars.name}}、{{input}}"
+      }
+    ]
+  },
+  {
+    "type": "http",
+    "name": "HTTP 请求",
+    "category": "工具",
+    "icon": "Link",
+    "color": "#14b8a6",
+    "description": "调用外部 HTTP 接口，结果可被下游引用",
+    "sort": 50,
+    "configSchema": [
+      {
+        "key": "method",
+        "label": "方法",
+        "type": "select",
+        "options": [
+          {
+            "label": "GET",
+            "value": "GET"
+          },
+          {
+            "label": "POST",
+            "value": "POST"
+          },
+          {
+            "label": "PUT",
+            "value": "PUT"
+          },
+          {
+            "label": "DELETE",
+            "value": "DELETE"
+          }
+        ],
+        "default": "GET"
+      },
+      {
+        "key": "url",
+        "label": "URL",
+        "type": "input",
+        "default": "https://httpbin.org/get"
+      },
+      {
+        "key": "headers",
+        "label": "请求头",
+        "type": "keyvalue",
+        "default": {}
+      },
+      {
+        "key": "body",
+        "label": "请求体（JSON）",
+        "type": "textarea",
+        "rows": 4,
+        "default": ""
+      },
+      {
+        "key": "timeoutMs",
+        "label": "超时(ms)",
+        "type": "number",
+        "default": 30000
+      }
+    ]
+  },
+  {
+    "type": "tts",
+    "name": "语音合成",
+    "category": "工具",
+    "icon": "Microphone",
+    "color": "#ec4899",
+    "description": "把文本转成音频，未配置厂商时生成占位音频",
+    "sort": 60,
+    "configSchema": [
+      {
+        "key": "provider",
+        "label": "语音厂商",
+        "type": "select",
+        "options": [
+          {
+            "label": "OpenAI",
+            "value": "openai"
+          },
+          {
+            "label": "Mock（占位音频）",
+            "value": "mock"
+          }
+        ],
+        "default": "mock"
+      },
+      {
+        "key": "voice",
+        "label": "音色",
+        "type": "input",
+        "default": "alloy"
+      },
+      {
+        "key": "text",
+        "label": "合成文本",
+        "type": "textarea",
+        "rows": 5,
+        "default": "{{input}}"
+      },
+      {
+        "key": "format",
+        "label": "格式",
+        "type": "select",
+        "options": [
+          {
+            "label": "MP3",
+            "value": "mp3"
+          },
+          {
+            "label": "WAV",
+            "value": "wav"
+          }
+        ],
+        "default": "mp3"
+      }
+    ]
+  },
+  {
+    "type": "output",
+    "name": "结束",
+    "category": "基础",
+    "icon": "Flag",
+    "color": "#64748b",
+    "description": "定义工作流的最终输出",
+    "sort": 70,
+    "configSchema": [
+      {
+        "key": "template",
+        "label": "输出模板",
+        "type": "textarea",
+        "rows": 4,
+        "default": "",
+        "help": "留空则取上游最后一个节点的结果"
+      },
+      {
+        "key": "outputKey",
+        "label": "输出字段名",
+        "type": "input",
+        "default": "result"
+      }
+    ]
+  }
+]

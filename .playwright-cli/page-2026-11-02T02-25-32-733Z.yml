@@ -1,0 +1,90 @@
+- generic [ref=f2e3]:
+  - banner [ref=f2e4]:
+    - generic [ref=f2e5]:
+      - button "← 工作流" [ref=f2e6] [cursor=pointer]
+      - generic [ref=f2e8]: AgentFlow
+      - generic [ref=f2e9]: 知识库
+    - button "退出" [ref=f2e11] [cursor=pointer]
+  - main [ref=f2e13]:
+    - complementary [ref=f2e14]:
+      - generic [ref=f2e15]:
+        - generic [ref=f2e16]: 知识库
+        - button "新建" [ref=f2e17] [cursor=pointer]
+      - generic [ref=f2e20] [cursor=pointer]:
+        - generic [ref=f2e21]: 售后手册
+        - generic [ref=f2e22]: 3 篇 / 5 分片
+    - generic [ref=f2e23]:
+      - generic [ref=f2e24]:
+        - generic [ref=f2e25]:
+          - generic [ref=f2e26]: 售后手册
+          - generic [ref=f2e27]: 退换货与配送说明
+          - generic [ref=f2e28]: mock / text-embedding-3-small · chunk 200 / overlap 40
+        - generic [ref=f2e29]:
+          - button "导入文本" [ref=f2e30] [cursor=pointer]
+          - button "上传文件" [ref=f2e32] [cursor=pointer]
+          - button "删除" [ref=f2e34] [cursor=pointer]
+      - generic [ref=f2e36]:
+        - textbox "输入问题，测试检索效果" [ref=f2e39]: 客服电话是多少
+        - generic [ref=f2e41]:
+          - button "减少数值" [ref=f2e42] [cursor=pointer]
+          - button "增加数值" [ref=f2e46] [cursor=pointer]
+          - spinbutton [ref=f2e52]: "4"
+        - button "检索" [ref=f2e53] [cursor=pointer]
+      - generic [ref=f2e224]:
+        - generic [ref=f2e225]:
+          - generic [ref=f2e226]: UI导入测试
+          - generic [ref=f2e227]: score 0.044
+        - paragraph [ref=f2e228]: 这是通过浏览器导入的测试文档。\n客服工作时间：每天 9 点到 21 点，节假日不休。\n紧急问题可拨打 400-800-1234。
+      - generic [ref=f2e57]:
+        - table [ref=f2e59]:
+          - rowgroup [ref=f2e67]:
+            - row [ref=f2e68]:
+              - columnheader "文档" [ref=f2e69]
+              - columnheader "状态" [ref=f2e71]
+              - columnheader "字符" [ref=f2e73]
+              - columnheader "分片" [ref=f2e75]
+              - columnheader "创建时间" [ref=f2e77]
+              - columnheader "操作" [ref=f2e79]
+        - table [ref=f2e85]:
+          - rowgroup [ref=f2e93]:
+            - row [ref=f2e216]:
+              - cell "UI导入测试" [ref=f2e180]
+              - cell "INDEXED" [ref=f2e217]
+              - cell "66" [ref=f2e182]
+              - cell "1" [ref=f2e218]
+              - cell "2026/11/2 10:24:58" [ref=f2e184]
+              - cell [ref=f2e107]:
+                - generic [ref=f2e108]:
+                  - button "预览" [ref=f2e109] [cursor=pointer]
+                  - button "建立索引" [ref=f2e111] [cursor=pointer]
+                  - button "删除" [ref=f2e113] [cursor=pointer]
+            - row [ref=f2e185]:
+              - cell "会员与积分规则" [ref=f2e186]
+              - cell "INDEXED" [ref=f2e118]
+              - cell "403" [ref=f2e187]
+              - cell "3" [ref=f2e188]
+              - cell "2026/11/2 10:20:06" [ref=f2e189]
+              - cell [ref=f2e128]:
+                - generic [ref=f2e129]:
+                  - button "预览" [ref=f2e130] [cursor=pointer]
+                  - button "建立索引" [ref=f2e132] [cursor=pointer]
+                  - button "删除" [ref=f2e134] [cursor=pointer]
+            - row [ref=f2e190]:
+              - cell "售后服务说明" [ref=f2e191]
+              - cell "INDEXED" [ref=f2e193]
+              - cell "164" [ref=f2e197]
+              - cell "1" [ref=f2e199]
+              - cell "2026/11/2 10:19:14" [ref=f2e201]
+              - cell [ref=f2e203]:
+                - generic [ref=f2e204]:
+                  - button "预览" [ref=f2e205] [cursor=pointer]
+                  - button "建立索引" [ref=f2e207] [cursor=pointer]
+                  - button "删除" [ref=f2e209] [cursor=pointer]
+  - dialog "分片预览 · UI导入测试" [ref=f2e230]:
+    - generic [active] [ref=f2e231]:
+      - banner [ref=f2e232]:
+        - heading "分片预览 · UI导入测试" [level=2] [ref=f2e233]
+        - button "关闭此对话框" [ref=f2e234] [cursor=pointer]
+      - generic [ref=f2e240]:
+        - generic [ref=f2e241]: "#1 · 66 字符"
+        - paragraph [ref=f2e242]: 这是通过浏览器导入的测试文档。\n客服工作时间：每天 9 点到 21 点，节假日不休。\n紧急问题可拨打 400-800-1234。

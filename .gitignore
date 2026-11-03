@@ -1,0 +1,31 @@
+# java
+target/
+*.class
+*.jar
+!.mvn/wrapper/maven-wrapper.jar
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+
+# node
+node_modules/
+dist/
+.vite/
+
+# env & runtime
+.env
+.env.local
+*.log
+logs/
+data/
+.DS_Store
+.idea/
+.vscode/
