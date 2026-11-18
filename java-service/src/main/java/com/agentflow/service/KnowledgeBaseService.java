@@ -46,14 +46,16 @@ public class KnowledgeBaseService {
     private final AiClient aiClient;
     private final ObjectMapper objectMapper;
 
-    public List<KnowledgeBaseVO> list() {
+    /** 管理员可见全部知识库，普通用户只能看到自己创建的。 */
+    public List<KnowledgeBaseVO> list(CurrentUser user) {
         return baseMapper.selectList(new LambdaQueryWrapper<KnowledgeBase>()
+                        .eq(isOwnerFiltered(user), KnowledgeBase::getUserId, userIdOf(user))
                         .orderByDesc(KnowledgeBase::getUpdatedAt))
                 .stream().map(this::toVO).toList();
     }
 
-    public KnowledgeBaseVO detail(Long id) {
-        return toVO(getEntity(id));
+    public KnowledgeBaseVO detail(Long id, CurrentUser user) {
+        return toVO(getOwned(id, user));
     }
 
     @Transactional
@@ -71,8 +73,8 @@ public class KnowledgeBaseService {
     }
 
     @Transactional
-    public void delete(Long id) {
-        KnowledgeBase base = getEntity(id);
+    public void delete(Long id, CurrentUser user) {
+        KnowledgeBase base = getOwned(id, user);
         chunkMapper.delete(new LambdaQueryWrapper<KnowledgeChunk>()
                 .eq(KnowledgeChunk::getKnowledgeBaseId, base.getId()));
         documentMapper.delete(new LambdaQueryWrapper<KnowledgeDocument>()
@@ -80,8 +82,8 @@ public class KnowledgeBaseService {
         baseMapper.deleteById(base.getId());
     }
 
-    public List<KnowledgeDocumentVO> documents(Long knowledgeBaseId) {
-        getEntity(knowledgeBaseId);
+    public List<KnowledgeDocumentVO> documents(Long knowledgeBaseId, CurrentUser user) {
+        getOwned(knowledgeBaseId, user);
         return documentMapper.selectList(new LambdaQueryWrapper<KnowledgeDocument>()
                         .eq(KnowledgeDocument::getKnowledgeBaseId, knowledgeBaseId)
                         .orderByDesc(KnowledgeDocument::getId))
@@ -89,8 +91,13 @@ public class KnowledgeBaseService {
     }
 
     @Transactional
-    public KnowledgeDocumentVO importText(Long knowledgeBaseId, String title, String content, String sourceType) {
-        getEntity(knowledgeBaseId);
+    public KnowledgeDocumentVO importText(Long knowledgeBaseId, String title, String content,
+                                         String sourceType, CurrentUser user) {
+        getOwned(knowledgeBaseId, user);
+        return importTextInternal(knowledgeBaseId, title, content, sourceType);
+    }
+
+    private KnowledgeDocumentVO importTextInternal(Long knowledgeBaseId, String title, String content, String sourceType) {
         if (content == null || content.trim().isEmpty()) {
             throw new BizException("文档内容不能为空");
         }
@@ -148,11 +155,12 @@ public class KnowledgeBaseService {
             chunkMapper.delete(new LambdaQueryWrapper<KnowledgeChunk>()
                     .eq(KnowledgeChunk::getDocumentId, document.getId()));
         }
-        return indexDocument(knowledgeBaseId, document.getId());
+        return indexDocumentInternal(knowledgeBaseId, document.getId());
     }
 
     @Transactional
-    public KnowledgeDocumentVO uploadTextFile(Long knowledgeBaseId, MultipartFile file) {
+    public KnowledgeDocumentVO uploadTextFile(Long knowledgeBaseId, MultipartFile file, CurrentUser user) {
+        getOwned(knowledgeBaseId, user);
         if (file == null || file.isEmpty()) {
             throw new BizException("请选择文件");
         }
@@ -163,22 +171,24 @@ public class KnowledgeBaseService {
         }
         try {
             String content = new String(file.getBytes(), StandardCharsets.UTF_8);
-            return importText(knowledgeBaseId, name, content, "FILE");
+            return importTextInternal(knowledgeBaseId, name, content, "FILE");
         } catch (Exception ex) {
             throw new BizException("读取文件失败: " + ex.getMessage());
         }
     }
 
     @Transactional
-    public void deleteDocument(Long knowledgeBaseId, Long documentId) {
+    public void deleteDocument(Long knowledgeBaseId, Long documentId, CurrentUser user) {
+        getOwned(knowledgeBaseId, user);
         KnowledgeDocument document = requireDocument(knowledgeBaseId, documentId);
         chunkMapper.delete(new LambdaQueryWrapper<KnowledgeChunk>()
                 .eq(KnowledgeChunk::getDocumentId, document.getId()));
         documentMapper.deleteById(document.getId());
     }
 
-    public List<KnowledgeChunkVO> previewChunks(Long knowledgeBaseId, Long documentId, Integer chunkSize, Integer chunkOverlap) {
-        KnowledgeBase base = getEntity(knowledgeBaseId);
+    public List<KnowledgeChunkVO> previewChunks(Long knowledgeBaseId, Long documentId, Integer chunkSize,
+                                               Integer chunkOverlap, CurrentUser user) {
+        KnowledgeBase base = getOwned(knowledgeBaseId, user);
         KnowledgeDocument document = requireDocument(knowledgeBaseId, documentId);
         int size = clamp(chunkSize, 200, 2000, base.getChunkSize());
         int overlap = clamp(chunkOverlap, 0, size / 2, base.getChunkOverlap());
@@ -195,7 +205,12 @@ public class KnowledgeBaseService {
     }
 
     @Transactional
-    public KnowledgeDocumentVO indexDocument(Long knowledgeBaseId, Long documentId) {
+    public KnowledgeDocumentVO indexDocument(Long knowledgeBaseId, Long documentId, CurrentUser user) {
+        getOwned(knowledgeBaseId, user);
+        return indexDocumentInternal(knowledgeBaseId, documentId);
+    }
+
+    private KnowledgeDocumentVO indexDocumentInternal(Long knowledgeBaseId, Long documentId) {
         KnowledgeBase base = getEntity(knowledgeBaseId);
         KnowledgeDocument document = requireDocument(knowledgeBaseId, documentId);
         List<String> chunks = split(document.getContent(), base.getChunkSize(), base.getChunkOverlap());
@@ -251,8 +266,8 @@ public class KnowledgeBaseService {
         return KnowledgeDocumentVO.of(document);
     }
 
-    public List<KnowledgeSearchHitVO> search(Long knowledgeBaseId, String query, Integer topK) {
-        KnowledgeBase base = getEntity(knowledgeBaseId);
+    public List<KnowledgeSearchHitVO> search(Long knowledgeBaseId, String query, Integer topK, CurrentUser user) {
+        KnowledgeBase base = getOwned(knowledgeBaseId, user);
         return doSearch(base, query, topK);
     }
 
@@ -351,6 +366,25 @@ public class KnowledgeBaseService {
         }
         return new EmbeddingResult(vectors, data.path("model").asText(base.getEmbeddingModel()),
                 data.path("mock").asBoolean(false));
+    }
+
+    /**
+     * 资源级归属校验：非管理员访问他人知识库统一返回 404，避免通过 ID 探测资源是否存在。
+     */
+    private KnowledgeBase getOwned(Long id, CurrentUser user) {
+        KnowledgeBase base = getEntity(id);
+        if (isOwnerFiltered(user) && !user.id().equals(base.getUserId())) {
+            throw BizException.notFound("知识库不存在: " + id);
+        }
+        return base;
+    }
+
+    private boolean isOwnerFiltered(CurrentUser user) {
+        return user != null && !"ADMIN".equals(user.role());
+    }
+
+    private Long userIdOf(CurrentUser user) {
+        return user == null ? -1L : user.id();
     }
 
     private KnowledgeBase getEntity(Long id) {

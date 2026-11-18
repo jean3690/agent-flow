@@ -34,7 +34,7 @@ public class KnowledgeBaseController {
 
     @GetMapping
     public ApiResponse<List<KnowledgeBaseVO>> list() {
-        return ApiResponse.ok(knowledgeBaseService.list());
+        return ApiResponse.ok(knowledgeBaseService.list(UserContext.get()));
     }
 
     @PostMapping
@@ -44,35 +44,35 @@ public class KnowledgeBaseController {
 
     @GetMapping("/{id}")
     public ApiResponse<KnowledgeBaseVO> detail(@PathVariable Long id) {
-        return ApiResponse.ok(knowledgeBaseService.detail(id));
+        return ApiResponse.ok(knowledgeBaseService.detail(id, UserContext.get()));
     }
 
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(@PathVariable Long id) {
-        knowledgeBaseService.delete(id);
+        knowledgeBaseService.delete(id, UserContext.get());
         return ApiResponse.ok();
     }
 
     @GetMapping("/{id}/documents")
     public ApiResponse<List<KnowledgeDocumentVO>> documents(@PathVariable Long id) {
-        return ApiResponse.ok(knowledgeBaseService.documents(id));
+        return ApiResponse.ok(knowledgeBaseService.documents(id, UserContext.get()));
     }
 
     @PostMapping("/{id}/documents/text")
     public ApiResponse<KnowledgeDocumentVO> importText(@PathVariable Long id,
                                                        @RequestBody KnowledgeTextRequest request) {
-        return ApiResponse.ok(knowledgeBaseService.importText(id, request.getTitle(), request.getContent(), "TEXT"));
+        return ApiResponse.ok(knowledgeBaseService.importText(id, request.getTitle(), request.getContent(), "TEXT", UserContext.get()));
     }
 
     @PostMapping("/{id}/documents/upload")
     public ApiResponse<KnowledgeDocumentVO> upload(@PathVariable Long id,
                                                    @RequestParam("file") MultipartFile file) {
-        return ApiResponse.ok(knowledgeBaseService.uploadTextFile(id, file));
+        return ApiResponse.ok(knowledgeBaseService.uploadTextFile(id, file, UserContext.get()));
     }
 
     @DeleteMapping("/{id}/documents/{documentId}")
     public ApiResponse<Void> deleteDocument(@PathVariable Long id, @PathVariable Long documentId) {
-        knowledgeBaseService.deleteDocument(id, documentId);
+        knowledgeBaseService.deleteDocument(id, documentId, UserContext.get());
         return ApiResponse.ok();
     }
 
@@ -82,17 +82,17 @@ public class KnowledgeBaseController {
                                                        @RequestBody(required = false) KnowledgePreviewRequest request) {
         return ApiResponse.ok(knowledgeBaseService.previewChunks(id, documentId,
                 request == null ? null : request.getChunkSize(),
-                request == null ? null : request.getChunkOverlap()));
+                request == null ? null : request.getChunkOverlap(), UserContext.get()));
     }
 
     @PostMapping("/{id}/documents/{documentId}/index")
     public ApiResponse<KnowledgeDocumentVO> index(@PathVariable Long id, @PathVariable Long documentId) {
-        return ApiResponse.ok(knowledgeBaseService.indexDocument(id, documentId));
+        return ApiResponse.ok(knowledgeBaseService.indexDocument(id, documentId, UserContext.get()));
     }
 
     @PostMapping("/{id}/search")
     public ApiResponse<List<KnowledgeSearchHitVO>> search(@PathVariable Long id,
                                                          @Valid @RequestBody KnowledgeSearchRequest request) {
-        return ApiResponse.ok(knowledgeBaseService.search(id, request.getQuery(), request.getTopK()));
+        return ApiResponse.ok(knowledgeBaseService.search(id, request.getQuery(), request.getTopK(), UserContext.get()));
     }
 }

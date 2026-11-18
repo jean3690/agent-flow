@@ -22,6 +22,7 @@ import org.springframework.scheduling.support.CronExpression;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Base64;
@@ -44,8 +45,12 @@ public class TriggerService {
     private final WorkflowTriggerMapper triggerMapper;
     private final WorkflowMapper workflowMapper;
     private final ExecutionService executionService;
+    private final SchedulerLockService schedulerLock;
     private final ObjectMapper objectMapper;
     private final ApplicationEventPublisher events;
+
+    /** 多实例部署时同一触发器的派发租约：租约期内只允许一个实例真正提交执行。 */
+    private static final Duration CRON_LEASE = Duration.ofSeconds(10);
 
     /** 防止同一个 CRON 触发器在上一次还没跑完时重复堆积。 */
     private final Set<Long> firing = ConcurrentHashMap.newKeySet();
@@ -154,6 +159,11 @@ public class TriggerService {
         WorkflowTrigger trigger = triggerMapper.selectById(triggerId);
         if (trigger == null || trigger.getEnabled() == null || trigger.getEnabled() != 1
                 || !TYPE_CRON.equals(trigger.getType())) {
+            return;
+        }
+        String lockKey = "cron:" + triggerId;
+        if (!schedulerLock.tryAcquire(lockKey, CRON_LEASE)) {
+            log.debug("trigger {} skipped, another instance holds the schedule lease", triggerId);
             return;
         }
         try {

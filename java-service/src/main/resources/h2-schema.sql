@@ -238,3 +238,11 @@ CREATE TABLE IF NOT EXISTS mcp_server (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- 多实例 CRON 派发租约锁：lock_key 唯一，过期后由抢占方接管
+CREATE TABLE IF NOT EXISTS scheduler_lock (
+  lock_key VARCHAR(128) PRIMARY KEY,
+  owner VARCHAR(64) NOT NULL,
+  expires_at TIMESTAMP NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

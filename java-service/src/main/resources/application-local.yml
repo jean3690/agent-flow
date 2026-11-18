@@ -1,7 +1,8 @@
 spring:
   datasource:
     # file based so workflows survive restarts; delete ./data to reset
-    url: jdbc:h2:file:./data/agentflow;MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE;AUTO_SERVER=TRUE
+    # H2_PATH 可指向其他目录，便于用独立数据库录屏/压测（默认 ./data/agentflow）
+    url: jdbc:h2:file:${H2_PATH:./data/agentflow};MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE;AUTO_SERVER=TRUE
     driver-class-name: org.h2.Driver
     username: sa
     password: ""

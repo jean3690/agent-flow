@@ -256,3 +256,12 @@ CREATE TABLE IF NOT EXISTS mcp_server (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   KEY idx_mcp_owner (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+-- 多实例 CRON 派发租约锁：lock_key 唯一，过期后由抢占方接管
+CREATE TABLE IF NOT EXISTS scheduler_lock (
+  lock_key VARCHAR(128) NOT NULL,
+  owner VARCHAR(64) NOT NULL,
+  expires_at DATETIME NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (lock_key),
+  KEY idx_scheduler_lock_expiry (expires_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='调度租约锁';

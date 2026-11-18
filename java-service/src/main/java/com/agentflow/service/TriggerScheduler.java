@@ -12,6 +12,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
 
+import java.time.Duration;
 import java.time.ZoneId;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -24,6 +25,7 @@ import java.util.concurrent.ScheduledFuture;
 public class TriggerScheduler {
 
     private final TriggerService triggerService;
+    private final SchedulerLockService schedulerLock;
     @Qualifier("triggerTaskScheduler")
     private final ThreadPoolTaskScheduler scheduler;
 
@@ -35,6 +37,14 @@ public class TriggerScheduler {
             schedule(trigger);
         }
         log.info("trigger scheduler started, {} cron job(s)", jobs.size());
+        // 周期性清理过期租约，避免 scheduler_lock 随运行时间无限增长。
+        scheduler.scheduleWithFixedDelay(() -> {
+            try {
+                schedulerLock.purgeExpired();
+            } catch (Exception ex) {
+                log.warn("purge expired scheduler locks failed: {}", ex.getMessage());
+            }
+        }, Duration.ofMinutes(10));
     }
 
     @EventListener
