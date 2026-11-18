@@ -51,3 +51,51 @@ class KnowledgeNodeExecutor(NodeExecutor):
             "knowledgeBaseId": knowledge_base_id,
             "query": query,
         }
+
+
+@register
+class KnowledgeUpsertNodeExecutor(NodeExecutor):
+    """把运行期内容写入知识库并立即建索引；同标题覆盖，可用于沉淀执行结果。"""
+
+    type = "knowledge_upsert"
+
+    async def execute(self, node: FlowNode, state: FlowState, ctx: NodeContext) -> dict[str, Any]:
+        config = node.config or {}
+        knowledge_base_id = str(config.get("knowledgeBaseId") or "").strip()
+        if not knowledge_base_id:
+            raise NodeExecutionError(node.id, "知识写入节点未选择知识库")
+
+        names = build_names(state.get("input") or {}, state.get("variables") or {}, state.get("outputs") or {})
+        title = render(str(config.get("title") or ""), names).strip()
+        content = render(str(config.get("content") or "{{input}}"), names, strict=True).strip()
+        if not content:
+            raise NodeExecutionError(node.id, "知识写入内容不能为空")
+
+        base_url = ctx.settings.java_service_base_url.rstrip("/")
+        try:
+            async with httpx.AsyncClient(timeout=30) as client:
+                response = await client.post(
+                    f"{base_url}/internal/knowledge/upsert",
+                    json={"knowledgeBaseId": knowledge_base_id, "title": title, "content": content},
+                    headers={"X-Internal-Token": ctx.settings.internal_token},
+                )
+                response.raise_for_status()
+                data = (response.json() or {}).get("data") or {}
+        except Exception as exc:  # noqa: BLE001 - node failures are surfaced through SSE
+            raise NodeExecutionError(node.id, f"知识写入失败: {exc}") from exc
+
+        status = str(data.get("status") or "")
+        if status != "INDEXED":
+            detail = str(data.get("errorMessage") or status or "未知错误")
+            raise NodeExecutionError(node.id, f"知识写入未完成索引: {detail}")
+
+        ctx.emit("node_log", nodeId=node.id, level="info",
+                 message=f"已写入知识库文档 {data.get('title')}（{data.get('chunkCount', 0)} 个分片）")
+        return {
+            "documentId": data.get("id"),
+            "title": data.get("title"),
+            "status": status,
+            "chunkCount": data.get("chunkCount", 0),
+            "knowledgeBaseId": knowledge_base_id,
+            "text": content,
+        }

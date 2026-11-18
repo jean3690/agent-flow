@@ -7,6 +7,7 @@ import uuid
 from app.config import Settings
 from app.core.errors import AgentFlowError
 from app.core.events import EventBus
+from app.core.logging import run_id_var
 from app.graph.compiler import build_graph
 from app.graph.context import NodeContext
 from app.nodes.base import extract_value
@@ -28,9 +29,14 @@ class WorkflowRunner:
             settings=self.settings,
             flow=flow,
             bus=self.bus,
+            workflow_id=self.request.workflow_id,
+            user_id=self.request.user_id,
             providers=self.request.providers,
+            mcp_servers=self.request.mcp_servers,
             resume_cache=self.request.resume,
+            subflows=self.request.subflows,
         )
+        token = run_id_var.set(self.run_id)
         try:
             self.bus.emit(
                 "run_started",
@@ -93,6 +99,7 @@ class WorkflowRunner:
         finally:
             self.bus.emit("done")
             self.bus.close()
+            run_id_var.reset(token)
 
 
 def _pick_output(flow, state) -> object:

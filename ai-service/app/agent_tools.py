@@ -1,15 +1,13 @@
 from __future__ import annotations
 
-import html as html_lib
-import ipaddress
 import json
-import re
-import socket
 from typing import TYPE_CHECKING, Any
-from urllib.parse import urlparse
 
 import httpx
 
+from app.core.search import WebSearchError, tavily_search
+from app.core.storage import StorageError, list_files, read_text, save_text
+from app.core.web import WebFetchError, blocked_reason, fetch_public_text
 from app.skills.registry import get_skill_registry
 
 if TYPE_CHECKING:
@@ -66,6 +64,63 @@ TOOL_SPECS: list[dict[str, Any]] = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "web_search",
+            "description": "联网搜索公开信息，返回标题、链接与摘要（需配置 Tavily Key）",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "检索语句"},
+                    "limit": {"type": "integer", "description": "结果条数，默认 5"},
+                },
+                "required": ["query"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "file_read",
+            "description": "读取工作区存储目录内的文本文件",
+            "parameters": {
+                "type": "object",
+                "properties": {"path": {"type": "string", "description": "相对存储目录的文件路径"}},
+                "required": ["path"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "file_write",
+            "description": "把文本写入工作区存储目录（自动校验路径，禁止越界）",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "相对存储目录的文件路径"},
+                    "content": {"type": "string", "description": "要写入的文本内容"},
+                    "append": {"type": "boolean", "description": "是否追加写入，默认 false"},
+                },
+                "required": ["path", "content"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "file_list",
+            "description": "列出工作区存储目录内的文件",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "prefix": {"type": "string", "description": "可选的路径前缀"},
+                    "limit": {"type": "integer", "description": "最多返回数量，默认 50"},
+                },
+            },
+        },
+    },
 ]
 
 TOOL_LABELS = {
@@ -73,6 +128,10 @@ TOOL_LABELS = {
     "load_skill": "加载技能",
     "knowledge_search": "知识检索",
     "web_fetch": "网页抓取",
+    "web_search": "联网搜索",
+    "file_read": "读取文件",
+    "file_write": "写入文件",
+    "file_list": "文件列表",
 }
 
 
@@ -84,6 +143,8 @@ async def execute_tool(name: str, args: dict[str, Any], state: FlowState,
         skill = str(args.get("name") or "").strip()
         if not skill:
             return "错误：缺少技能名称"
+        if "skillIds" in config and skill not in (config.get("skillIds") or []):
+            return "错误：该技能未挂载到当前智能体"
         try:
             detail = get_skill_registry().detail(skill)
         except Exception as exc:  # noqa: BLE001 - tool errors are returned to the model
@@ -93,7 +154,86 @@ async def execute_tool(name: str, args: dict[str, Any], state: FlowState,
         return await _knowledge_search(args, config, ctx)
     if name == "web_fetch":
         return await _web_fetch(str(args.get("url") or ""))
+    if name == "web_search":
+        return await _web_search(args, ctx)
+    if name == "file_read":
+        return _file_read(args, ctx)
+    if name == "file_write":
+        return _file_write(args, ctx)
+    if name == "file_list":
+        return _file_list(args, ctx)
     return f"错误：未知工具 {name}"
+
+
+async def _web_search(args: dict[str, Any], ctx: NodeContext) -> str:
+    query = str(args.get("query") or "").strip()
+    if not query:
+        return "错误：缺少检索语句"
+    api_key, base_url = ctx.credentials("tavily")
+    if not api_key:
+        return "错误：未配置 Tavily 搜索 Key，请在「模型配置」页填写"
+    try:
+        limit = max(1, min(int(args.get("limit") or 5), 10))
+    except (TypeError, ValueError):
+        limit = 5
+    try:
+        data = await tavily_search(api_key, base_url, query, limit=limit)
+    except WebSearchError as exc:
+        return f"错误：{exc}"
+    results = data.get("results") or []
+    if not results:
+        return str(data.get("answer") or "没有搜索到结果")[:MAX_FETCH_CHARS]
+    lines = []
+    for index, item in enumerate(results[:limit]):
+        if not isinstance(item, dict):
+            continue
+        lines.append(
+            f"[{index + 1}] {item.get('title', '')}\n{item.get('url', '')}\n{item.get('content', '')}"
+        )
+    summary = str(data.get("answer") or "").strip()
+    text = (summary + "\n\n" if summary else "") + "\n\n".join(lines)
+    return text[:MAX_FETCH_CHARS]
+
+
+def _file_read(args: dict[str, Any], ctx: NodeContext) -> str:
+    path = str(args.get("path") or "").strip()
+    if not path:
+        return "错误：缺少文件路径"
+    try:
+        result = read_text(ctx.settings, path, max_chars=MAX_FETCH_CHARS)
+    except StorageError as exc:
+        return f"错误：{exc}"
+    return result["text"][:MAX_FETCH_CHARS]
+
+
+def _file_write(args: dict[str, Any], ctx: NodeContext) -> str:
+    path = str(args.get("path") or "").strip()
+    content = str(args.get("content") or "")
+    if not path:
+        return "错误：缺少文件路径"
+    try:
+        metadata = save_text(
+            ctx.settings,
+            content,
+            name=path,
+            overwrite=True,
+            append=bool(args.get("append")),
+        )
+    except StorageError as exc:
+        return f"错误：{exc}"
+    return json.dumps(metadata, ensure_ascii=False)
+
+
+def _file_list(args: dict[str, Any], ctx: NodeContext) -> str:
+    try:
+        limit = max(1, min(int(args.get("limit") or 50), 500))
+    except (TypeError, ValueError):
+        limit = 50
+    try:
+        items = list_files(ctx.settings, prefix=str(args.get("prefix") or ""), limit=limit)
+    except StorageError as exc:
+        return f"错误：{exc}"
+    return json.dumps(items[:limit], ensure_ascii=False)[:MAX_FETCH_CHARS]
 
 
 async def _knowledge_search(args: dict[str, Any], config: dict[str, Any], ctx: NodeContext) -> str:
@@ -128,40 +268,15 @@ async def _knowledge_search(args: dict[str, Any], config: dict[str, Any], ctx: N
 async def _web_fetch(url: str) -> str:
     if not url:
         return "错误：缺少 url"
-    parsed = urlparse(url)
-    if parsed.scheme not in {"http", "https"} or not parsed.hostname:
-        return "错误：仅支持 http/https 公网地址"
-    reason = _blocked_reason(parsed.hostname)
-    if reason:
-        return f"错误：{reason}"
     try:
-        async with httpx.AsyncClient(timeout=15, follow_redirects=True) as client:
-            response = await client.get(url, headers={"User-Agent": "AgentFlow/0.1"})
-            response.raise_for_status()
-            content_type = response.headers.get("content-type", "")
-            text = response.text
+        page = await fetch_public_text(url, max_chars=MAX_FETCH_CHARS)
+    except WebFetchError as exc:
+        return f"错误：{exc}"
     except Exception as exc:  # noqa: BLE001 - surface as tool result
         return f"错误：抓取失败 {exc}"
-    if "html" in content_type or text.lstrip().startswith("<"):
-        text = re.sub(r"(?is)<(script|style).*?</\1>", " ", text)
-        text = re.sub(r"(?s)<[^>]+>", " ", text)
-        text = html_lib.unescape(text)
-    return re.sub(r"\s+", " ", text).strip()[:MAX_FETCH_CHARS]
+    return page["content"]
 
 
 def _blocked_reason(hostname: str) -> str | None:
-    lowered = hostname.lower()
-    if lowered in {"localhost", "localhost.localdomain"} or lowered.endswith(".local"):
-        return "不允许访问内网地址"
-    try:
-        addresses = {info[4][0] for info in socket.getaddrinfo(hostname, None)}
-    except socket.gaierror:
-        return None
-    for address in addresses:
-        try:
-            ip = ipaddress.ip_address(address)
-        except ValueError:
-            continue
-        if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_multicast:
-            return "不允许访问内网地址"
-    return None
+    """保留旧入口，实际校验逻辑在 app.core.web。"""
+    return blocked_reason(hostname)

@@ -8,6 +8,7 @@ from app.graph.context import NodeContext
 from app.graph.state import FlowState
 from app.llm.factory import build_chat_model, mock_stream
 from app.llm.providers import provider_spec
+from app.memory_client import SCOPES, retrieve_memory
 from app.nodes.base import NodeExecutor
 from app.nodes.registry import register
 from app.schemas.flow import FlowNode
@@ -35,6 +36,25 @@ class LlmNodeExecutor(NodeExecutor):
                 detail = registry.detail(skill_id)
                 system_prompt = f"{system_prompt}\n\n## 技能: {detail['title']}\n{detail['content']}".strip()
             ctx.emit("node_log", nodeId=node.id, level="info", message=f"已加载技能: {', '.join(skill_ids)}")
+
+        memory_scope = str(config.get("memoryScope") or "").strip().lower()
+        if memory_scope in SCOPES:
+            try:
+                memory = await retrieve_memory(
+                    ctx,
+                    scope=memory_scope,
+                    query=prompt,
+                    top_k=int(config.get("memoryTopK") or 4),
+                    provider=str(config.get("memoryProvider") or "mock"),
+                    model=str(config.get("memoryModel") or "text-embedding-3-small"),
+                )
+                context = str(memory.get("context") or "").strip()
+                if context:
+                    system_prompt = f"{system_prompt}\n\n## 长期记忆\n{context}".strip()
+                    ctx.emit("node_log", nodeId=node.id, level="info",
+                             message=f"已注入 {memory.get('count', 0)} 条长期记忆")
+            except Exception as exc:  # noqa: BLE001 - 记忆不可用时不应阻断主流程
+                ctx.emit("node_log", nodeId=node.id, level="warn", message=f"记忆召回失败，已跳过: {exc}")
 
         temperature = float(config.get("temperature") if config.get("temperature") is not None else 0.7)
         max_tokens = config.get("maxTokens")

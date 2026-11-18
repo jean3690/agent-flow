@@ -3,11 +3,11 @@ from __future__ import annotations
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from fastapi.staticfiles import StaticFiles
 
-from app.api import catalog, embeddings, executions, health, providers, skills
+from app.api import catalog, embeddings, executions, files, health, mcp, providers, skills
 from app.config import get_settings
 from app.core.errors import AgentFlowError
 from app.core.logging import setup_logging
@@ -43,8 +43,8 @@ app.include_router(skills.router)
 app.include_router(providers.router)
 app.include_router(embeddings.router)
 app.include_router(executions.router)
-
-app.mount("/files", StaticFiles(directory=str(settings.audio_dir)), name="files")
+app.include_router(files.router)
+app.include_router(mcp.router)
 
 
 @app.exception_handler(AgentFlowError)
@@ -55,3 +55,9 @@ async def _agentflow_error(_: Request, exc: AgentFlowError):
 @app.get("/")
 async def root():
     return {"service": "agent-flow-ai", "docs": "/docs", "health": "/health"}
+
+
+@app.exception_handler(RequestValidationError)
+async def _validation_error(_: Request, exc: RequestValidationError):
+    errors = [{"loc": list(error["loc"]), "msg": error["msg"], "type": error["type"]} for error in exc.errors()]
+    return JSONResponse(status_code=422, content={"detail": errors})

@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import asyncio
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Header
 from fastapi.responses import StreamingResponse
 
+from app.api.skills import require_internal
 from app.config import get_settings
 from app.core.events import EventBus
 from app.graph.runner import WorkflowRunner
@@ -16,7 +17,9 @@ _RUNNING: dict[str, asyncio.Task] = {}
 
 
 @router.post("/executions")
-async def execute(request: ExecutionRequest):
+async def execute(request: ExecutionRequest, x_internal_token: str = Header(default="")):
+    if request.mcp_servers:
+        require_internal(x_internal_token)
     bus = EventBus()
     runner = WorkflowRunner(request, bus, get_settings())
     task = asyncio.create_task(runner.run())
@@ -31,7 +34,7 @@ async def execute(request: ExecutionRequest):
                 task.cancel()
                 try:
                     await task
-                except (asyncio.CancelledError, Exception):  # noqa: BLE001
+                except (asyncio.CancelledError, Exception):  # noqa: BLE001, S110 - run errors already emitted
                     pass
             if _RUNNING.get(runner.run_id) is task:
                 _RUNNING.pop(runner.run_id, None)

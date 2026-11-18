@@ -6,6 +6,9 @@ from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# qwen 的环境变量名是 dashscope_*，与 provider key 不一致
+_SETTINGS_ALIAS = {"qwen": "dashscope"}
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="AI_", env_file=".env", extra="ignore")
@@ -14,9 +17,16 @@ class Settings(BaseSettings):
     mock_mode: str = "auto"  # auto | always | never
     cors_origins: str = "*"
     output_dir: str = "./data/audio"
+    # 用户上传 / 文件节点读写目录；留空时复用 output_dir，避免破坏历史媒体文件
+    file_dir: str = ""
+    max_upload_mb: int = 50
+    max_read_chars: int = 200_000
     max_concurrency: int = 8
     java_service_base_url: str = "http://127.0.0.1:8084"
     internal_token: str = "agent-flow-internal"
+    managed_skills_dir: str = "./data/skills"
+    # Explicit deployment-only exceptions for private MCP hosts (no wildcards).
+    mcp_private_hosts: str = ""
 
     openai_api_key: str = ""
     openai_base_url: str = "https://api.openai.com/v1"
@@ -28,6 +38,17 @@ class Settings(BaseSettings):
     zhipu_base_url: str = "https://open.bigmodel.cn/api/paas/v4"
     aiping_api_key: str = ""
     aiping_base_url: str = "https://aiping.cn/api/v1"
+    step_api_key: str = ""
+    step_base_url: str = "https://api.stepfun.com/v1"
+    # APIFree 的入口因账号而异，默认留空，由「模型配置」页填写
+    apifree_api_key: str = ""
+    apifree_base_url: str = ""
+    volcengine_api_key: str = ""
+    volcengine_base_url: str = "https://ark.cn-beijing.volces.com/api/plan/v3"
+    agnes_api_key: str = ""
+    agnes_base_url: str = "https://apihub.agnes-ai.com"
+    tavily_api_key: str = ""
+    tavily_base_url: str = "https://api.tavily.com"
 
     @property
     def skills_dir(self) -> Path:
@@ -39,12 +60,27 @@ class Settings(BaseSettings):
         path.mkdir(parents=True, exist_ok=True)
         return path
 
+    @property
+    def files_dir(self) -> Path:
+        path = Path(self.file_dir) if self.file_dir.strip() else Path(self.output_dir)
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
+    def credentials_for(self, provider: str) -> tuple[str, str]:
+        name = (provider or "").lower()
+        field = _SETTINGS_ALIAS.get(name, name)
+        key = (
+            getattr(self, f"{field}_api_key", "")
+            or os.getenv(f"{field.upper()}_API_KEY", "")
+            or os.getenv(f"{name.upper()}_API_KEY", "")
+        )
+        return key, getattr(self, f"{field}_base_url", "")
+
     def api_key_for(self, provider: str) -> str:
-        env = f"{provider.upper()}_API_KEY"
-        return getattr(self, f"{provider}_api_key", "") or os.getenv(env, "")
+        return self.credentials_for(provider)[0]
 
     def base_url_for(self, provider: str) -> str:
-        return getattr(self, f"{provider}_base_url", "")
+        return self.credentials_for(provider)[1]
 
 
 @lru_cache

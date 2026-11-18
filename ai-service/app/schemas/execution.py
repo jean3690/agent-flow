@@ -4,6 +4,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from app.mcp_client import McpServerConfig
 from app.schemas.flow import Flow
 
 
@@ -27,11 +28,15 @@ class ProviderConfig(BaseModel):
 class ExecutionRequest(BaseModel):
     run_id: str | None = Field(default=None, alias="runId")
     workflow_id: str | None = Field(default=None, alias="workflowId")
+    user_id: int | None = Field(default=None, alias="userId")
     flow: Flow
     input: dict[str, Any] = Field(default_factory=dict)
     providers: dict[str, ProviderConfig] = Field(default_factory=dict)
+    mcp_servers: dict[str, McpServerConfig] = Field(default_factory=dict, alias="mcpServers")
     # 断点续跑：nodeId -> 上次成功节点的输出对象；命中即跳过执行
     resume: dict[str, dict[str, Any]] = Field(default_factory=dict)
+    # 子工作流定义：workflowId -> Flow，由 Java 在提交前内联（避免 Python 反查数据库）
+    subflows: dict[str, Flow] = Field(default_factory=dict)
     options: ExecutionOptions = Field(default_factory=ExecutionOptions)
 
     model_config = {"populate_by_name": True}
