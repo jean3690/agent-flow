@@ -1,6 +1,14 @@
 CREATE DATABASE IF NOT EXISTS agent_flow DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 USE agent_flow;
 
+-- 已有库升级到版本快照功能时，请手动执行：
+-- ALTER TABLE workflow ADD COLUMN published_version INT NULL, ADD COLUMN published_at DATETIME NULL;
+-- ALTER TABLE execution_record ADD COLUMN flow_version INT NULL,
+--   ADD COLUMN prompt_tokens INT DEFAULT 0,
+--   ADD COLUMN completion_tokens INT DEFAULT 0,
+--   ADD COLUMN total_tokens INT DEFAULT 0,
+--   ADD COLUMN cost_usd DECIMAL(12,6) DEFAULT 0;
+
 CREATE TABLE IF NOT EXISTS `app_user` (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
   username VARCHAR(64) NOT NULL,
@@ -22,6 +30,8 @@ CREATE TABLE IF NOT EXISTS workflow (
   flow_data LONGTEXT NOT NULL,
   status TINYINT NOT NULL DEFAULT 1 COMMENT '1=草稿 2=已发布',
   version INT NOT NULL DEFAULT 1,
+  published_version INT DEFAULT NULL COMMENT '当前发布版本，NULL 表示未发布',
+  published_at DATETIME DEFAULT NULL,
   user_id BIGINT DEFAULT NULL,
   deleted TINYINT NOT NULL DEFAULT 0,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -29,6 +39,21 @@ CREATE TABLE IF NOT EXISTS workflow (
   KEY idx_workflow_user (user_id),
   KEY idx_workflow_name (name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS workflow_version (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  workflow_id BIGINT NOT NULL,
+  version INT NOT NULL,
+  name VARCHAR(128) NOT NULL,
+  description VARCHAR(512) DEFAULT NULL,
+  engine_type VARCHAR(32) NOT NULL DEFAULT 'langgraph',
+  flow_data LONGTEXT NOT NULL,
+  note VARCHAR(255) DEFAULT NULL,
+  created_by BIGINT DEFAULT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_workflow_version (workflow_id, version),
+  KEY idx_workflow_version_wf (workflow_id, id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='工作流版本快照';
 
 CREATE TABLE IF NOT EXISTS node_definition (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -57,6 +82,11 @@ CREATE TABLE IF NOT EXISTS execution_record (
   output_data LONGTEXT,
   error_message TEXT,
   node_count INT NOT NULL DEFAULT 0,
+  flow_version INT DEFAULT NULL COMMENT '执行时使用的工作流版本',
+  prompt_tokens INT DEFAULT 0,
+  completion_tokens INT DEFAULT 0,
+  total_tokens INT DEFAULT 0,
+  cost_usd DECIMAL(12,6) DEFAULT 0 COMMENT '估算成本（美元）',
   elapsed_ms BIGINT DEFAULT 0,
   started_at DATETIME DEFAULT NULL,
   finished_at DATETIME DEFAULT NULL,
@@ -94,6 +124,19 @@ CREATE TABLE IF NOT EXISTS llm_provider_config (
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   UNIQUE KEY uk_llm_provider (provider)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='服务商凭据配置';
+
+CREATE TABLE IF NOT EXISTS api_key (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  name VARCHAR(64) NOT NULL,
+  key_hash VARCHAR(200) NOT NULL COMMENT 'BCrypt 哈希，明文仅在创建时返回',
+  owner_user_id BIGINT NOT NULL,
+  enabled TINYINT NOT NULL DEFAULT 1,
+  expires_at DATETIME DEFAULT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_api_key_hash (key_hash),
+  KEY idx_api_key_owner (owner_user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='服务间调用 API Key';
 
 CREATE TABLE IF NOT EXISTS knowledge_base (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -138,3 +181,78 @@ CREATE TABLE IF NOT EXISTS knowledge_chunk (
   KEY idx_knowledge_chunk_base (knowledge_base_id),
   KEY idx_knowledge_chunk_doc (document_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='知识库分片';
+
+CREATE TABLE IF NOT EXISTS approval_task (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  run_id VARCHAR(64) NOT NULL COMMENT '执行 ID',
+  workflow_id BIGINT DEFAULT NULL,
+  node_id VARCHAR(64) NOT NULL,
+  user_id BIGINT DEFAULT NULL COMMENT '任务归属，非管理员只能处理自己的任务',
+  title VARCHAR(255) NOT NULL,
+  content LONGTEXT,
+  status VARCHAR(16) NOT NULL DEFAULT 'PENDING' COMMENT 'PENDING/APPROVED/REJECTED/EXPIRED',
+  decision_comment VARCHAR(1000) DEFAULT NULL,
+  decided_by BIGINT DEFAULT NULL,
+  expires_at DATETIME DEFAULT NULL,
+  decided_at DATETIME DEFAULT NULL,
+  deleted TINYINT NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  KEY idx_approval_status (status),
+  KEY idx_approval_user (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='人工审批任务';
+
+CREATE TABLE IF NOT EXISTS agent_memory (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  workflow_id BIGINT DEFAULT NULL,
+  user_id BIGINT DEFAULT NULL,
+  scope VARCHAR(16) NOT NULL DEFAULT 'workflow' COMMENT 'workflow/user/global',
+  memory_type VARCHAR(32) NOT NULL DEFAULT 'fact' COMMENT '事实/偏好/决策/摘要',
+  content LONGTEXT NOT NULL,
+  tags VARCHAR(512) DEFAULT NULL COMMENT '逗号分隔标签',
+  source_node_id VARCHAR(64) DEFAULT NULL,
+  embedding LONGTEXT COMMENT '向量 JSON',
+  embedding_model VARCHAR(64) DEFAULT NULL,
+  deleted TINYINT NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  KEY idx_agent_memory_scope (scope),
+  KEY idx_agent_memory_user (user_id),
+  KEY idx_agent_memory_workflow (workflow_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Agent 长期记忆';
+
+CREATE TABLE IF NOT EXISTS workflow_trigger (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  workflow_id BIGINT NOT NULL,
+  user_id BIGINT DEFAULT NULL,
+  name VARCHAR(128) NOT NULL,
+  type VARCHAR(16) NOT NULL DEFAULT 'CRON' COMMENT 'CRON/WEBHOOK',
+  enabled TINYINT NOT NULL DEFAULT 1,
+  cron_expression VARCHAR(128) DEFAULT NULL,
+  timezone VARCHAR(64) NOT NULL DEFAULT 'Asia/Shanghai',
+  webhook_token VARCHAR(64) DEFAULT NULL COMMENT 'Webhook 路径令牌',
+  input_data LONGTEXT,
+  last_run_id VARCHAR(64) DEFAULT NULL,
+  last_status VARCHAR(16) DEFAULT NULL,
+  last_run_at DATETIME DEFAULT NULL,
+  next_run_at DATETIME DEFAULT NULL,
+  deleted TINYINT NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_trigger_token (webhook_token),
+  KEY idx_trigger_workflow (workflow_id, id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='工作流触发器';
+CREATE TABLE IF NOT EXISTS mcp_server (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  user_id BIGINT NOT NULL,
+  name VARCHAR(128) NOT NULL,
+  url VARCHAR(2048) NOT NULL,
+  headers_cipher MEDIUMTEXT,
+  allowed_tools TEXT,
+  tools MEDIUMTEXT,
+  timeout_ms INT NOT NULL DEFAULT 15000,
+  enabled TINYINT NOT NULL DEFAULT 1,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  KEY idx_mcp_owner (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

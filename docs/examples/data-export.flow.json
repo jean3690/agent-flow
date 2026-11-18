@@ -1,0 +1,23 @@
+{
+  "name": "结构化数据筛选并导出 CSV",
+  "engineType": "langgraph",
+  "nodes": [
+    {"id": "start", "type": "input", "name": "接收模型 / API 文本", "position": {"x": 80, "y": 100}, "config": {"variables": ["raw"]}},
+    {"id": "parsed", "type": "json_parse", "name": "解析 JSON 数组", "position": {"x": 360, "y": 100}, "config": {"source": "{{input.raw}}", "stripCodeFence": true}},
+    {"id": "filtered", "type": "list_process", "name": "保留评分 ≥ 80", "position": {"x": 640, "y": 100}, "config": {"action": "filter", "field": "score", "operator": "gte", "compareValue": "80"}},
+    {"id": "sorted", "type": "list_process", "name": "评分降序", "position": {"x": 920, "y": 100}, "config": {"action": "sort", "field": "score", "descending": true}},
+    {"id": "csv", "type": "csv", "name": "导出 CSV", "position": {"x": 1200, "y": 100}, "config": {"action": "generate", "columns": ["name", "score"], "hasHeader": true, "protectFormulas": true}},
+    {"id": "mapped", "type": "data_map", "name": "汇总返回字段", "position": {"x": 1480, "y": 100}, "config": {"source": {}, "mapping": {"count": "{{outputs.filtered.count}}", "rows": "{{outputs.sorted.items}}", "csv": "{{outputs.csv.text}}"}}},
+    {"id": "checked", "type": "validate", "name": "校验导出结果", "position": {"x": 1760, "y": 100}, "config": {"rules": {"count": {"type": "integer", "min": 0}, "rows": {"type": "array"}, "csv": {"required": true, "type": "string"}}, "stopOnError": true}},
+    {"id": "end", "type": "output", "name": "返回结果", "position": {"x": 2040, "y": 100}, "config": {"mode": "last"}}
+  ],
+  "edges": [
+    {"source": "start", "target": "parsed"},
+    {"source": "parsed", "target": "filtered"},
+    {"source": "filtered", "target": "sorted"},
+    {"source": "sorted", "target": "csv"},
+    {"source": "csv", "target": "mapped"},
+    {"source": "mapped", "target": "checked"},
+    {"source": "checked", "target": "end"}
+  ]
+}
