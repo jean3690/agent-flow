@@ -363,7 +363,8 @@ def main() -> int:
         {"input": {"q": "回答问题"}}, "自洽投票"))
     check("人工审批节点(mock 自动通过)执行", test_node(
         token, "approval", "human_approval",
-        {"title": "发布审批", "content": "{{input.text}}", "waitSeconds": 30},
+        # autoApprove 让冒烟不依赖 AI_MOCK_MODE=always，也不需要人工点通过
+        {"title": "发布审批", "content": "{{input.text}}", "waitSeconds": 30, "autoApprove": True},
         {"input": {"text": "准备发布"}}, "人工审批"))
 
     # 条件分支节点：表达式求值与路由
