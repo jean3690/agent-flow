@@ -2,9 +2,10 @@ import axios from 'axios'
 import { ElMessage } from 'element-plus'
 
 export const TOKEN_KEY = 'agentflow_token'
+export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/+$/, '')
 
 const http = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
+  baseURL: API_BASE_URL,
   timeout: 30000
 })
 

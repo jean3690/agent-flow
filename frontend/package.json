@@ -3,11 +3,16 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "typecheck": "vue-tsc --noEmit",
     "preview": "vite preview",
+    "test": "playwright test --config playwright.unit.config.ts",
+    "test:ui": "playwright test --config playwright.frontend.config.ts",
     "test:e2e": "playwright test"
   },
   "dependencies": {

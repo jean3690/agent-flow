@@ -36,6 +36,7 @@ export const useRunStore = defineStore('run', () => {
     output.value = null
     elapsed.value = 0
     runId.value = ''
+    failedRunId.value = ''
     logs.value = []
     Object.keys(nodeStatus).forEach((key) => delete nodeStatus[key])
     Object.keys(nodeElapsed).forEach((key) => delete nodeElapsed[key])
@@ -48,7 +49,9 @@ export const useRunStore = defineStore('run', () => {
     reset()
     failedRunId.value = ''
     running.value = true
-    controller = new AbortController()
+    const activeController = new AbortController()
+    controller = activeController
+    let receivedTerminal = false
     pushLog({
       event: 'run_started',
       message: resumeRunId ? '断点续跑：复用已成功节点的输出…' : '提交执行…',
@@ -60,21 +63,34 @@ export const useRunStore = defineStore('run', () => {
         workflowId,
         input,
         resumeRunId,
-        signal: controller.signal,
-        onEvent: handleEvent
+        signal: activeController.signal,
+        onEvent: (event) => {
+          if (controller !== activeController || activeController.signal.aborted) return
+          if (event.event === 'run_finished' || event.event === 'run_failed') receivedTerminal = true
+          handleEvent(event)
+        }
       })
+      if (controller === activeController && !receivedTerminal) {
+        throw new Error('执行流已断开，未收到结束事件，请到执行历史确认状态')
+      }
     } catch (err: any) {
+      if (controller !== activeController) return
       if (err?.name !== 'AbortError') {
         error.value = err?.message || '执行失败'
+        finishActiveNodes('interrupted')
         pushLog({ event: 'run_failed', message: error.value, level: 'error', at: Date.now() })
       }
     } finally {
-      running.value = false
-      controller = null
+      // An aborted request may settle after the user has started a new run.
+      if (controller === activeController) {
+        running.value = false
+        controller = null
+      }
     }
   }
 
   function stop() {
+    if (!running.value) return
     const id = runId.value
     if (id) {
       executionApi.cancel(id).catch(() => {})
@@ -82,6 +98,21 @@ export const useRunStore = defineStore('run', () => {
     controller?.abort()
     controller = null
     running.value = false
+    finishActiveNodes('canceled')
+    pushLog({
+      event: 'run_canceled',
+      message: id
+        ? '已停止接收执行结果，取消请求已发送；最终状态请查看执行历史'
+        : '已停止接收执行结果，尚未取得执行编号；任务状态请查看执行历史',
+      level: 'warn',
+      at: Date.now()
+    })
+  }
+
+  function finishActiveNodes(status: string) {
+    Object.keys(nodeStatus).forEach((id) => {
+      if (nodeStatus[id] === 'running') nodeStatus[id] = status
+    })
   }
 
   function handleEvent(event: SseEvent) {
@@ -139,24 +170,24 @@ export const useRunStore = defineStore('run', () => {
         output.value = data.output
         if (data.outputs) Object.assign(nodeOutputs, data.outputs)
         elapsed.value = data.elapsedMs || 0
+        finishActiveNodes('success')
         pushLog({ event: event.event, message: '执行完成 (' + data.elapsedMs + 'ms)', level: 'success', at: Date.now() })
         break
       case 'run_failed':
         error.value = data.error?.message || '执行失败'
         elapsed.value = data.elapsedMs || 0
         failedRunId.value = data.runId || runId.value
+        finishActiveNodes(data.status === 'CANCELED' ? 'canceled' : 'failed')
         pushLog({ event: event.event, message: error.value, level: 'error', at: Date.now() })
         break
       default:
         break
     }
-    if (logs.value.length > 400) {
-      logs.value.splice(0, logs.value.length - 400)
-    }
   }
 
   function pushLog(entry: RunLogEntry) {
     logs.value.push(entry)
+    if (logs.value.length > 400) logs.value.splice(0, logs.value.length - 400)
   }
 
   return {

@@ -7,8 +7,13 @@ const router = createRouter({
     { path: '/', name: 'workflows', component: () => import('../pages/WorkflowListPage.vue') },
     { path: '/editor/:id', name: 'editor', component: () => import('../pages/EditorPage.vue') },
     { path: '/providers', name: 'providers', component: () => import('../pages/ProvidersPage.vue') },
+    { path: '/skills', name: 'skills', component: () => import('../pages/SkillsPage.vue') },
+    { path: '/mcp', name: 'mcp', component: () => import('../pages/McpPage.vue') },
     { path: '/knowledge', name: 'knowledge', component: () => import('../pages/KnowledgePage.vue') },
+    { path: '/memories', name: 'memories', component: () => import('../pages/MemoriesPage.vue') },
+    { path: '/approvals', name: 'approvals', component: () => import('../pages/ApprovalsPage.vue') },
     { path: '/executions', name: 'executions', component: () => import('../pages/ExecutionsPage.vue') },
+    { path: '/files', name: 'files', component: () => import('../pages/FilesPage.vue') },
     { path: '/:pathMatch(.*)*', redirect: '/' }
   ]
 })

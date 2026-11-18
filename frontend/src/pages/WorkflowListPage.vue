@@ -21,8 +21,13 @@
         <div class="list-page__tools">
           <el-input v-model="keyword" placeholder="搜索名称" clearable style="width: 220px" @change="load" />
           <el-button @click="router.push('/knowledge')">知识库</el-button>
+          <el-button @click="router.push('/memories')">记忆</el-button>
+          <el-button @click="router.push('/approvals')">审批</el-button>
           <el-button @click="router.push('/executions')">执行记录</el-button>
+          <el-button @click="router.push('/files')">文件</el-button>
           <el-button @click="router.push('/providers')">模型配置</el-button>
+          <el-button @click="router.push('/skills')">Skills</el-button>
+          <el-button @click="router.push('/mcp')">MCP</el-button>
           <el-button @click="importInput?.click()">导入</el-button>
           <input ref="importInput" type="file" accept=".json,application/json" style="display: none" @change="onImportFile" />
           <el-button type="primary" @click="openCreate">新建工作流</el-button>
@@ -38,8 +43,13 @@
             </template>
           </el-table-column>
           <el-table-column prop="nodeCount" label="节点" width="80" />
-          <el-table-column prop="version" label="版本" width="80">
-            <template #default="{ row }">v{{ row.version }}</template>
+          <el-table-column prop="version" label="版本" width="130">
+            <template #default="{ row }">
+              <span>v{{ row.version }}</span>
+              <el-tag v-if="row.publishedVersion" size="small" type="success" style="margin-left: 6px">
+                线上 v{{ row.publishedVersion }}
+              </el-tag>
+            </template>
           </el-table-column>
           <el-table-column label="更新时间" width="180">
             <template #default="{ row }">{{ formatDate(row.updatedAt) }}</template>

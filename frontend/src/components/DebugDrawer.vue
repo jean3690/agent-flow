@@ -65,7 +65,7 @@
             <el-tab-pane label="节点输出" name="node">
               <div v-if="selectedNode" class="debug__node-head">
                 <span class="debug__node-title">{{ selectedNode.data?.name || selectedNode.id }}</span>
-                <span class="debug__meta">{{ selectedNode.data?.type || selectedNode.type }}</span>
+                <span class="debug__meta">{{ selectedNode.data?.kind || selectedNode.type }}</span>
                 <span v-if="selectedElapsed !== undefined" class="debug__meta">{{ selectedElapsed }} ms</span>
               </div>
               <OutputPreview v-if="selectedOutput !== undefined" :value="selectedOutput" />
@@ -84,7 +84,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useRunStore } from '../stores/run'
 import { executionApi } from '../api'
@@ -103,18 +103,25 @@ const tab = ref('logs')
 const selectedNodeId = ref('')
 const inputText = ref('{\n  "topic": "用三句话说明什么是 AI 工作流"\n}')
 
-onMounted(async () => {
-  if (!props.resumeRunId) return
-  try {
-    const detail = await executionApi.detail(props.resumeRunId)
-    if (detail.input && detail.input !== 'null') {
-      inputText.value = detail.input
+let loadedResumeId = ''
+watch(
+  () => props.modelValue ? props.resumeRunId : undefined,
+  async (resumeRunId) => {
+    if (!resumeRunId || resumeRunId === loadedResumeId) return
+    loadedResumeId = resumeRunId
+    try {
+      const detail = await executionApi.detail(resumeRunId)
+      if (detail.input && detail.input !== 'null') {
+        inputText.value = detail.input
+      }
+      await run(resumeRunId)
+    } catch {
+      loadedResumeId = ''
+      ElMessage.error('读取要续跑的执行记录失败')
     }
-    await run(props.resumeRunId)
-  } catch {
-    ElMessage.error('读取要续跑的执行记录失败')
-  }
-})
+  },
+  { immediate: true }
+)
 
 const tokenText = computed(() => Object.values(runStore.tokens).join('\n---\n'))
 const selectedNode = computed(() => props.nodes.find((node) => node.id === selectedNodeId.value))
@@ -135,6 +142,10 @@ async function run(resumeRunId?: string) {
   let input: Record<string, any> = {}
   try {
     input = inputText.value.trim() ? JSON.parse(inputText.value) : {}
+    if (!input || typeof input !== 'object' || Array.isArray(input)) {
+      ElMessage.error('输入必须是 JSON 对象，例如 {"topic":"主题"}')
+      return
+    }
   } catch {
     ElMessage.error('输入不是合法 JSON')
     return
@@ -232,6 +243,8 @@ async function run(resumeRunId?: string) {
 .debug__dot.is-running { background: #f59e0b; }
 .debug__dot.is-success { background: #22c55e; }
 .debug__dot.is-failed { background: #ef4444; }
+.debug__dot.is-canceled { background: #8b93a7; }
+.debug__dot.is-interrupted { background: #f59e0b; }
 
 .debug__node-name {
   flex: 1;

@@ -7,6 +7,7 @@
       :min-zoom="0.3"
       :max-zoom="1.6"
       :delete-key-code="['Backspace', 'Delete']"
+      :multi-selection-key-code="['Meta', 'Control']"
       fit-view-on-init
       class="canvas__flow"
       @connect="onConnect"
@@ -46,7 +47,9 @@ const emit = defineEmits<{
   (e: 'add-node', type: string, position: { x: number; y: number }): void
 }>()
 
-const { screenToFlowCoordinate, zoomIn, zoomOut, fitView } = useVueFlow()
+const { screenToFlowCoordinate, zoomIn, zoomOut, fitView, getSelectedNodes, getSelectedEdges } = useVueFlow()
+
+defineExpose({ getSelectedNodes, getSelectedEdges, fitView })
 
 const nodesModel = computed({
   get: () => props.nodes,

@@ -47,6 +47,12 @@
           <el-table-column label="耗时" width="100">
             <template #default="{ row }">{{ row.elapsedMs ? row.elapsedMs + ' ms' : '-' }}</template>
           </el-table-column>
+          <el-table-column label="Token" width="100">
+            <template #default="{ row }">{{ row.totalTokens ? row.totalTokens : '-' }}</template>
+          </el-table-column>
+          <el-table-column label="成本" width="100">
+            <template #default="{ row }">{{ row.costUsd ? '$' + Number(row.costUsd).toFixed(6) : '-' }}</template>
+          </el-table-column>
           <el-table-column label="开始时间" width="170">
             <template #default="{ row }">{{ formatDate(row.startedAt) }}</template>
           </el-table-column>
@@ -81,8 +87,12 @@
         <div class="executions__meta">
           <span class="mono">{{ detail.runId }}</span>
           <span>{{ detail.workflowName }}</span>
+          <span v-if="detail.flowVersion" class="af-muted">版本 v{{ detail.flowVersion }}</span>
           <el-tag size="small" :type="statusType(detail.status)">{{ statusText(detail.status) }}</el-tag>
           <span class="af-muted">{{ detail.elapsedMs }} ms</span>
+          <span v-if="detail.totalTokens" class="af-muted">
+            {{ detail.totalTokens }} tokens · ${{ Number(detail.costUsd || 0).toFixed(6) }}
+          </span>
         </div>
         <div v-if="detail.errorMessage" class="executions__error">{{ detail.errorMessage }}</div>
 

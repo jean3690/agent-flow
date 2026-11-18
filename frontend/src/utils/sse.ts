@@ -1,9 +1,7 @@
-import { TOKEN_KEY } from '../api/request'
+import { API_BASE_URL, TOKEN_KEY } from '../api/request'
+import { parseEventStream, type SseEvent } from './eventStream'
 
-export interface SseEvent {
-  event: string
-  data: any
-}
+export type { SseEvent } from './eventStream'
 
 interface RunOptions {
   workflowId: number
@@ -19,7 +17,7 @@ interface RunOptions {
  */
 export async function runWorkflow({ workflowId, input, resumeRunId, signal, onEvent }: RunOptions): Promise<void> {
   const token = localStorage.getItem(TOKEN_KEY) || ''
-  const response = await fetch('/api/workflows/' + workflowId + '/execute', {
+  const response = await fetch(API_BASE_URL + '/workflows/' + workflowId + '/execute', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -30,51 +28,24 @@ export async function runWorkflow({ workflowId, input, resumeRunId, signal, onEv
     signal
   })
 
-  if (!response.ok || !response.body) {
+  if (!response.ok || !response.body || !response.headers.get('Content-Type')?.includes('text/event-stream')) {
     const text = await response.text()
-    throw new Error(text || 'HTTP ' + response.status)
-  }
-
-  const reader = response.body.getReader()
-  const decoder = new TextDecoder('utf-8')
-  let buffer = ''
-
-  while (true) {
-    const { done, value } = await reader.read()
-    if (done) break
-    buffer += decoder.decode(value, { stream: true })
-
-    let boundary = buffer.indexOf('\n\n')
-    while (boundary >= 0) {
-      const block = buffer.slice(0, boundary)
-      buffer = buffer.slice(boundary + 2)
-      const parsed = parseBlock(block)
-      if (parsed) onEvent(parsed)
-      boundary = buffer.indexOf('\n\n')
+    let message = text || 'HTTP ' + response.status
+    try {
+      message = JSON.parse(text).message || message
+    } catch {
+      // Some proxies return a plain-text error response.
     }
-  }
-
-  const tail = parseBlock(buffer)
-  if (tail) onEvent(tail)
-}
-
-function parseBlock(block: string): SseEvent | null {
-  if (!block.trim()) return null
-  let event = 'message'
-  const dataLines: string[] = []
-  for (const rawLine of block.split('\n')) {
-    const line = rawLine.trim()
-    if (line.startsWith('event:')) {
-      event = line.slice(6).trim()
-    } else if (line.startsWith('data:')) {
-      dataLines.push(line.slice(5).trim())
+    if (response.status === 401) {
+      localStorage.removeItem(TOKEN_KEY)
+      location.hash = '#/login'
     }
+    throw new Error(message)
   }
-  if (!dataLines.length) return null
-  const raw = dataLines.join('\n')
-  try {
-    return { event, data: JSON.parse(raw) }
-  } catch {
-    return { event, data: raw }
+
+  for await (const event of parseEventStream(response.body)) {
+    onEvent(event)
+    // A terminal event is sufficient; don't wait for a lingering connection.
+    if (event.event === 'run_finished' || event.event === 'run_failed') break
   }
 }

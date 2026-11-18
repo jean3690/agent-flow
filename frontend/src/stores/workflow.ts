@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { nodeApi } from '../api'
+import { isMetaField } from '../utils/nodeSchema'
 import type { FlowNodeModel, NodeDefinition } from '../types'
 
 export const useWorkflowStore = defineStore('workflow', () => {
@@ -35,6 +36,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     const definition = definitionMap.value[type]
     const config: Record<string, any> = {}
     definition?.configSchema?.forEach((field) => {
+      if (isMetaField(field)) return
       // field.default comes from a deeply-reactive definition (a Vue Proxy).
       // structuredClone throws on Proxies, and toRaw only unwraps the top level
       // (nested reactive values would still throw). Node defaults are plain JSON,
