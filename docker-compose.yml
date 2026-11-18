@@ -7,33 +7,57 @@ services:
       AI_CORS_ORIGINS: "*"
       AI_JAVA_SERVICE_BASE_URL: http://java-service:8084
       AI_INTERNAL_TOKEN: ${AI_INTERNAL_TOKEN:-agent-flow-internal}
+      AI_MANAGED_SKILLS_DIR: /srv/data/skills
+      AI_MCP_PRIVATE_HOSTS: ${AI_MCP_PRIVATE_HOSTS:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
     volumes:
       - ai-data:/srv/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3).status == 200 else 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
 
   java-service:
     build: ./java-service
     restart: unless-stopped
     depends_on:
-      - ai-service
+      ai-service:
+        condition: service_healthy
     environment:
       AI_SERVICE_BASE_URL: http://ai-service:8000
       AI_INTERNAL_TOKEN: ${AI_INTERNAL_TOKEN:-agent-flow-internal}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:8080}
       JWT_SECRET: ${JWT_SECRET:-agent-flow-local-secret-key-please-change}
+      CRYPTO_KEY: ${CRYPTO_KEY:-agent-flow-local-crypto-key}
+      APP_AUTH_DEFAULT_USERNAME: ${APP_AUTH_DEFAULT_USERNAME:-admin}
+      APP_AUTH_DEFAULT_PASSWORD: ${APP_AUTH_DEFAULT_PASSWORD:-admin123}
     volumes:
       - java-data:/app/data
     ports:
       - "8084:8084"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8084/api/system/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
 
   web:
     build: ./frontend
     restart: unless-stopped
     depends_on:
-      - java-service
+      java-service:
+        condition: service_healthy
     ports:
       - "8080:80"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
 
 volumes:
   ai-data:

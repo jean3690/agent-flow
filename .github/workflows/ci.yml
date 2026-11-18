@@ -41,12 +41,61 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      - name: 前端类型检查与构建
+      - name: 前端单元测试、类型检查与构建
         working-directory: frontend
         run: |
           npm ci
+          npm test
           npm run typecheck
           npm run build
+
+  sdk:
+    name: 官方 SDK 测试
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Python SDK 测试
+        working-directory: sdk/python
+        run: |
+          pip install -e ".[dev]"
+          python -m pytest -q
+          pip wheel --no-deps --wheel-dir dist .
+          python - <<'PY'
+          import zipfile
+          from pathlib import Path
+          with zipfile.ZipFile(next(Path('dist').glob('*.whl'))) as wheel:
+              assert 'agentflow/resources/mcp.py' in wheel.namelist()
+              assert 'agentflow/resources/skills.py' in wheel.namelist()
+          PY
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: TypeScript SDK 测试
+        working-directory: sdk/typescript
+        run: |
+          npm ci
+          npm test
+          npm run build
+          node --input-type=module -e "import { AgentFlowClient } from 'agentflow-sdk'; const c = new AgentFlowClient('http://test'); if (typeof c.mcp.discover !== 'function' || typeof c.skills.save !== 'function') process.exit(1)"
+          npm pack --dry-run
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Java SDK 测试与构建
+        working-directory: sdk/java
+        run: mvn -q verify
 
   e2e:
     name: 端到端冒烟
@@ -102,19 +151,25 @@ jobs:
         working-directory: frontend
         run: npx playwright install --with-deps chromium
 
-      - name: 启动前端 (dev)
+      - name: 前端隔离回归
+        working-directory: frontend
+        run: npm run test:ui
+
+      - name: 后端冒烟
+        run: python3 e2e/smoke.py
+
+      - name: 服务接入冒烟
+        run: python3 e2e/verify_service.py
+
+      - name: 前端 UI 冒烟 (Playwright)
         working-directory: frontend
         run: |
           nohup npm run dev -- --port 5173 --host 127.0.0.1 &
+          DEV_PID=$!
           for i in $(seq 1 30); do
             curl -sf http://127.0.0.1:5173/ >/dev/null && break
             sleep 2
           done
           curl -sf http://127.0.0.1:5173/
-
-      - name: 后端冒烟
-        run: python3 e2e/smoke.py
-
-      - name: 前端 UI 冒烟 (Playwright)
-        working-directory: frontend
-        run: npm run test:e2e
+          npm run test:e2e
+          kill $DEV_PID 2>/dev/null || true

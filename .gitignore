@@ -19,6 +19,9 @@ build/
 node_modules/
 dist/
 .vite/
+dist-test/
+test-results/
+playwright-report/
 
 # env & runtime
 .env
