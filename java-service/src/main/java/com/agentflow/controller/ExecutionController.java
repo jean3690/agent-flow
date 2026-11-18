@@ -4,6 +4,7 @@ import com.agentflow.common.ApiResponse;
 import com.agentflow.common.PageResult;
 import com.agentflow.dto.ExecutionDetailVO;
 import com.agentflow.dto.ExecutionSummaryVO;
+import com.agentflow.security.UserContext;
 import com.agentflow.service.ExecutionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -27,23 +28,23 @@ public class ExecutionController {
             @RequestParam(defaultValue = "10") long size,
             @RequestParam(required = false) Long workflowId,
             @RequestParam(required = false) String status) {
-        return ApiResponse.ok(executionService.page(page, size, workflowId, status));
+        return ApiResponse.ok(executionService.page(page, size, workflowId, status, UserContext.require()));
     }
 
     @PostMapping("/{runId}/cancel")
     public ApiResponse<Void> cancel(@PathVariable String runId) {
-        executionService.cancel(runId);
+        executionService.cancel(runId, UserContext.require());
         return ApiResponse.ok();
     }
 
     @DeleteMapping("/{runId}")
     public ApiResponse<Void> delete(@PathVariable String runId) {
-        executionService.delete(runId);
+        executionService.delete(runId, UserContext.require());
         return ApiResponse.ok();
     }
 
     @GetMapping("/{runId}")
     public ApiResponse<ExecutionDetailVO> detail(@PathVariable String runId) {
-        return ApiResponse.ok(executionService.detail(runId));
+        return ApiResponse.ok(executionService.detail(runId, UserContext.require()));
     }
 }

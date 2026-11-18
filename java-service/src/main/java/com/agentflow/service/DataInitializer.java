@@ -54,15 +54,16 @@ public class DataInitializer implements ApplicationRunner {
         try (InputStream input = new ClassPathResource("node-definitions.json").getInputStream()) {
             JsonNode nodes = objectMapper.readTree(input);
             int created = 0;
+            int updated = 0;
             for (JsonNode item : nodes) {
                 String type = item.path("type").asText();
-                Long existing = nodeDefinitionMapper.selectCount(
+                NodeDefinition definition = nodeDefinitionMapper.selectOne(
                         new LambdaQueryWrapper<NodeDefinition>().eq(NodeDefinition::getType, type));
-                if (existing != null && existing > 0) {
-                    continue;
+                boolean isNew = definition == null;
+                if (isNew) {
+                    definition = new NodeDefinition();
+                    definition.setType(type);
                 }
-                NodeDefinition definition = new NodeDefinition();
-                definition.setType(type);
                 definition.setName(item.path("name").asText());
                 definition.setCategory(item.path("category").asText());
                 definition.setIcon(item.path("icon").asText());
@@ -71,10 +72,15 @@ public class DataInitializer implements ApplicationRunner {
                 definition.setConfigSchema(item.path("configSchema").toString());
                 definition.setSort(item.path("sort").asInt());
                 definition.setEnabled(1);
-                nodeDefinitionMapper.insert(definition);
-                created++;
+                if (isNew) {
+                    nodeDefinitionMapper.insert(definition);
+                    created++;
+                } else {
+                    nodeDefinitionMapper.updateById(definition);
+                    updated++;
+                }
             }
-            log.info("node definitions synced: {} total, {} new", nodes.size(), created);
+            log.info("node definitions synced: {} total, {} new, {} updated", nodes.size(), created, updated);
         }
     }
 }

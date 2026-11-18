@@ -2,6 +2,7 @@ package com.agentflow.util;
 
 import com.agentflow.common.BizException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -18,6 +19,8 @@ import java.util.Set;
  * user gets immediate feedback and we never persist an obviously broken graph.
  */
 public final class FlowValidator {
+
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private FlowValidator() {
     }
@@ -36,7 +39,7 @@ public final class FlowValidator {
         }
         Map<String, String> types = collectTypes(flow);
         Map<String, Set<String>> adjacency = buildAdjacency(types, flow.get("edges"));
-        Map<String, List<String>> effective = buildEffective(flow, types, adjacency);
+        Map<String, List<String>> effective = buildEffective(flow, types, adjacency, true);
         assertAcyclic(types.keySet(), effective);
 
         Set<String> targets = new HashSet<>();
@@ -67,7 +70,7 @@ public final class FlowValidator {
         }
         Map<String, String> types = collectTypes(flow);
         Map<String, Set<String>> adjacency = buildAdjacency(types, flow.get("edges"));
-        Map<String, List<String>> effective = buildEffective(flow, types, adjacency);
+        Map<String, List<String>> effective = buildEffective(flow, types, adjacency, false);
         assertAcyclic(types.keySet(), effective);
     }
 
@@ -105,7 +108,8 @@ public final class FlowValidator {
         return adjacency;
     }
 
-    private static Map<String, List<String>> buildEffective(JsonNode flow, Map<String, String> types, Map<String, Set<String>> adjacency) {
+    private static Map<String, List<String>> buildEffective(JsonNode flow, Map<String, String> types,
+                                                             Map<String, Set<String>> adjacency, boolean strict) {
         Map<String, List<String>> effective = new LinkedHashMap<>();
         for (Map.Entry<String, String> entry : types.entrySet()) {
             String id = entry.getKey();
@@ -124,11 +128,33 @@ public final class FlowValidator {
                     targets.addAll(adjacency.get(id));
                 }
                 if (targets.isEmpty()) {
-                    throw new BizException("条件节点 " + id + " 未配置分支目标");
+                    if (strict) {
+                        throw new BizException("条件节点 " + id + " 未配置分支目标");
+                    }
+                    effective.put(id, targets);
+                    continue;
                 }
                 for (String target : targets) {
                     if (!types.containsKey(target)) {
                         throw new BizException("条件分支指向不存在的节点: " + target);
+                    }
+                }
+            } else if ("llm_router".equals(entry.getValue())) {
+                JsonNode config = findConfig(flow, id);
+                targets.addAll(routerTargets(config));
+                if (targets.isEmpty()) {
+                    targets.addAll(adjacency.get(id));
+                }
+                if (targets.isEmpty()) {
+                    if (strict) {
+                        throw new BizException("意图路由节点 " + id + " 未配置分支目标");
+                    }
+                    effective.put(id, targets);
+                    continue;
+                }
+                for (String target : targets) {
+                    if (!types.containsKey(target)) {
+                        throw new BizException("路由分支指向不存在的节点: " + target);
                     }
                 }
             } else {
@@ -137,6 +163,31 @@ public final class FlowValidator {
             effective.put(id, targets);
         }
         return effective;
+    }
+
+    private static List<String> routerTargets(JsonNode config) {
+        JsonNode routes = config.path("routes");
+        if (routes.isTextual()) {
+            try {
+                routes = MAPPER.readTree(routes.asText());
+            } catch (Exception ex) {
+                throw new BizException("意图路由分支表不是合法 JSON");
+            }
+        }
+        Set<String> targets = new LinkedHashSet<>();
+        if (routes.isArray()) {
+            for (JsonNode item : routes) {
+                String target = item.path("target").asText("").trim();
+                if (!target.isBlank()) {
+                    targets.add(target);
+                }
+            }
+        }
+        String fallback = config.path("fallbackTarget").asText("").trim();
+        if (!fallback.isBlank()) {
+            targets.add(fallback);
+        }
+        return new ArrayList<>(targets);
     }
 
     public static int countNodes(JsonNode flow) {

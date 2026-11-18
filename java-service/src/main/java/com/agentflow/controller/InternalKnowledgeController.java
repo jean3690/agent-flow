@@ -3,8 +3,10 @@ package com.agentflow.controller;
 import com.agentflow.common.ApiResponse;
 import com.agentflow.common.BizException;
 import com.agentflow.config.AgentFlowProperties;
+import com.agentflow.dto.KnowledgeDocumentVO;
 import com.agentflow.dto.KnowledgeSearchHitVO;
 import com.agentflow.dto.KnowledgeSearchRequest;
+import com.agentflow.dto.KnowledgeUpsertRequest;
 import com.agentflow.service.KnowledgeBaseService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -35,5 +37,15 @@ public class InternalKnowledgeController {
         List<KnowledgeSearchHitVO> hits = knowledgeBaseService.searchForRuntime(
                 request.getKnowledgeBaseId(), request.getQuery(), request.getTopK());
         return ApiResponse.ok(Map.of("chunks", hits, "count", hits.size()));
+    }
+
+    @PostMapping("/upsert")
+    public ApiResponse<KnowledgeDocumentVO> upsert(@RequestHeader(value = "X-Internal-Token", required = false) String token,
+                                                   @Valid @RequestBody KnowledgeUpsertRequest request) {
+        if (token == null || !token.equals(properties.getInternal().getToken())) {
+            throw BizException.unauthorized("内部调用令牌无效");
+        }
+        return ApiResponse.ok(knowledgeBaseService.upsertForRuntime(
+                request.getKnowledgeBaseId(), request.getTitle(), request.getContent()));
     }
 }

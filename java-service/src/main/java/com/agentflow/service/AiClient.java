@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -62,8 +63,7 @@ public class AiClient {
             }
             return objectMapper.readTree(response.body());
         } catch (IOException | InterruptedException ex) {
-            Thread.currentThread().interrupt();
-            throw new BizException("无法连接 AI 服务: " + ex.getMessage());
+            throw wrap("无法连接 AI 服务", ex);
         }
     }
 
@@ -71,6 +71,7 @@ public class AiClient {
         HttpRequest request = HttpRequest.newBuilder(URI.create(baseUrl() + path))
                 .timeout(Duration.ofMillis(properties.getAi().getTimeoutMs()))
                 .header("Accept", "application/json")
+                .header("X-Internal-Token", properties.getInternal().getToken())
                 .POST(HttpRequest.BodyPublishers.noBody())
                 .build();
         try {
@@ -80,8 +81,7 @@ public class AiClient {
             }
             return objectMapper.readTree(response.body());
         } catch (IOException | InterruptedException ex) {
-            Thread.currentThread().interrupt();
-            throw new BizException("无法连接 AI 服务: " + ex.getMessage());
+            throw wrap("无法连接 AI 服务", ex);
         }
     }
 
@@ -92,6 +92,7 @@ public class AiClient {
                     .timeout(Duration.ofMillis(properties.getAi().getTimeoutMs()))
                     .header("Content-Type", "application/json")
                     .header("Accept", "application/json")
+                    .header("X-Internal-Token", properties.getInternal().getToken())
                     .POST(HttpRequest.BodyPublishers.ofString(json, StandardCharsets.UTF_8))
                     .build();
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
@@ -100,8 +101,7 @@ public class AiClient {
             }
             return objectMapper.readTree(response.body());
         } catch (IOException | InterruptedException ex) {
-            Thread.currentThread().interrupt();
-            throw new BizException("无法连接 AI 服务: " + ex.getMessage());
+            throw wrap("无法连接 AI 服务", ex);
         }
     }
 
@@ -109,19 +109,21 @@ public class AiClient {
         HttpRequest request = HttpRequest.newBuilder(URI.create(baseUrl() + "/v1/executions"))
                 .timeout(Duration.ofMillis(properties.getAi().getTimeoutMs()))
                 .header("Content-Type", "application/json")
+                .header("X-Internal-Token", properties.getInternal().getToken())
                 .header("Accept", "text/event-stream")
                 .POST(HttpRequest.BodyPublishers.ofString(payload, StandardCharsets.UTF_8))
                 .build();
         try {
             HttpResponse<InputStream> response = httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
             if (response.statusCode() >= 300) {
-                String body = new String(response.body().readAllBytes(), StandardCharsets.UTF_8);
-                throw new BizException("AI 服务拒绝执行: HTTP " + response.statusCode() + " " + body);
+                try (InputStream errorStream = response.body()) {
+                    String body = new String(errorStream.readAllBytes(), StandardCharsets.UTF_8);
+                    throw new BizException("AI 服务拒绝执行: HTTP " + response.statusCode() + " " + body);
+                }
             }
             return response.body();
         } catch (IOException | InterruptedException ex) {
-            Thread.currentThread().interrupt();
-            throw new BizException("提交执行失败: " + ex.getMessage());
+            throw wrap("提交执行失败", ex);
         }
     }
 
@@ -137,8 +139,49 @@ public class AiClient {
             }
             return response.body();
         } catch (IOException | InterruptedException ex) {
-            Thread.currentThread().interrupt();
-            throw new BizException("读取文件失败: " + ex.getMessage());
+            throw wrap("读取文件失败", ex);
+        }
+    }
+
+    /** Upload raw bytes to ai-service; returns the file metadata node. */
+    public JsonNode uploadFile(String name, byte[] content, String contentType) {
+        String query = (name == null || name.isBlank())
+                ? ""
+                : "?name=" + URLEncoder.encode(name, StandardCharsets.UTF_8);
+        HttpRequest request = HttpRequest.newBuilder(URI.create(baseUrl() + "/v1/files" + query))
+                .timeout(Duration.ofMillis(properties.getAi().getTimeoutMs()))
+                .header("Content-Type", contentType == null || contentType.isBlank()
+                        ? "application/octet-stream" : contentType)
+                .header("Accept", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofByteArray(content))
+                .build();
+        try {
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            if (response.statusCode() >= 300) {
+                throw new BizException("上传文件失败: HTTP " + response.statusCode() + " " + response.body());
+            }
+            return objectMapper.readTree(response.body()).path("data");
+        } catch (IOException | InterruptedException ex) {
+            throw wrap("上传文件失败", ex);
+        }
+    }
+
+    /** DELETE a stored file; returns the metadata of the removed file. */
+    public JsonNode delete(String path) {
+        HttpRequest request = HttpRequest.newBuilder(URI.create(baseUrl() + path))
+                .timeout(Duration.ofMillis(properties.getAi().getTimeoutMs()))
+                .header("Accept", "application/json")
+                .header("X-Internal-Token", properties.getInternal().getToken())
+                .DELETE()
+                .build();
+        try {
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            if (response.statusCode() >= 300) {
+                throw BizException.notFound("文件不存在: " + path);
+            }
+            return objectMapper.readTree(response.body()).path("data");
+        } catch (IOException | InterruptedException ex) {
+            throw wrap("删除文件失败", ex);
         }
     }
 
@@ -149,6 +192,34 @@ public class AiClient {
             log.warn("ai service health check failed: {}", ex.getMessage());
             return false;
         }
+    }
+
+    public JsonNode putJson(String path, Object body) {
+        try {
+            HttpRequest request = HttpRequest.newBuilder(URI.create(baseUrl() + path))
+                    .timeout(Duration.ofMillis(properties.getAi().getTimeoutMs()))
+                    .header("Content-Type", "application/json")
+                    .header("X-Internal-Token", properties.getInternal().getToken())
+                    .PUT(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(body), StandardCharsets.UTF_8))
+                    .build();
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            if (response.statusCode() >= 300) {
+                JsonNode error = objectMapper.readTree(response.body());
+                throw new BizException(error.path("detail").isTextual() ? error.path("detail").asText() : "AI 服务拒绝保存: HTTP " + response.statusCode());
+            }
+            return objectMapper.readTree(response.body()).path("data");
+        } catch (IOException | InterruptedException ex) { throw wrap("保存失败", ex); }
+    }
+
+    /**
+     * 统一包装 IO 异常：只有真正的 {@link InterruptedException} 才需要恢复中断标记，
+     * 普通网络异常不应污染线程池线程的中断状态。
+     */
+    private BizException wrap(String action, Exception ex) {
+        if (ex instanceof InterruptedException) {
+            Thread.currentThread().interrupt();
+        }
+        return new BizException(action + ": " + ex.getMessage());
     }
 
     private String baseUrl() {

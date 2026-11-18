@@ -2,6 +2,11 @@ package com.agentflow.controller;
 
 import com.agentflow.common.ApiResponse;
 import com.agentflow.service.SkillService;
+import com.agentflow.dto.SkillSaveRequest;
+import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,5 +37,20 @@ public class SkillController {
     @PostMapping("/reload")
     public ApiResponse<JsonNode> reload() {
         return ApiResponse.ok(skillService.reload());
+    }
+
+    @PutMapping("/{name}")
+    public ApiResponse<JsonNode> save(@PathVariable String name, @Valid @RequestBody SkillSaveRequest request) {
+        return ApiResponse.ok(skillService.save(name, request.getContent()));
+    }
+
+    @DeleteMapping("/{name}")
+    public ApiResponse<Void> delete(@PathVariable String name) {
+        skillService.delete(name); return ApiResponse.ok();
+    }
+
+    @GetMapping("/{name}/references/{file}")
+    public ApiResponse<JsonNode> reference(@PathVariable String name, @PathVariable String file) {
+        return ApiResponse.ok(skillService.reference(name, file));
     }
 }

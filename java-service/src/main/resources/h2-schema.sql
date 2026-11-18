@@ -18,10 +18,30 @@ CREATE TABLE IF NOT EXISTS workflow (
   flow_data CLOB NOT NULL,
   status TINYINT NOT NULL DEFAULT 1,
   version INT NOT NULL DEFAULT 1,
+  published_version INT,
+  published_at TIMESTAMP,
   user_id BIGINT,
   deleted TINYINT NOT NULL DEFAULT 0,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 兼容已存在的本地 H2 文件库（CREATE TABLE IF NOT EXISTS 不会补列）
+ALTER TABLE workflow ADD COLUMN IF NOT EXISTS published_version INT;
+ALTER TABLE workflow ADD COLUMN IF NOT EXISTS published_at TIMESTAMP;
+
+CREATE TABLE IF NOT EXISTS workflow_version (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  workflow_id BIGINT NOT NULL,
+  version INT NOT NULL,
+  name VARCHAR(128) NOT NULL,
+  description VARCHAR(512),
+  engine_type VARCHAR(32) NOT NULL DEFAULT 'langgraph',
+  flow_data CLOB NOT NULL,
+  note VARCHAR(255),
+  created_by BIGINT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE (workflow_id, version)
 );
 
 CREATE TABLE IF NOT EXISTS node_definition (
@@ -50,12 +70,23 @@ CREATE TABLE IF NOT EXISTS execution_record (
   output_data CLOB,
   error_message CLOB,
   node_count INT NOT NULL DEFAULT 0,
+  flow_version INT,
+  prompt_tokens INT DEFAULT 0,
+  completion_tokens INT DEFAULT 0,
+  total_tokens INT DEFAULT 0,
+  cost_usd DECIMAL(12,6) DEFAULT 0,
   elapsed_ms BIGINT DEFAULT 0,
   started_at TIMESTAMP,
   finished_at TIMESTAMP,
   deleted TINYINT NOT NULL DEFAULT 0,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+ALTER TABLE execution_record ADD COLUMN IF NOT EXISTS flow_version INT;
+ALTER TABLE execution_record ADD COLUMN IF NOT EXISTS prompt_tokens INT DEFAULT 0;
+ALTER TABLE execution_record ADD COLUMN IF NOT EXISTS completion_tokens INT DEFAULT 0;
+ALTER TABLE execution_record ADD COLUMN IF NOT EXISTS total_tokens INT DEFAULT 0;
+ALTER TABLE execution_record ADD COLUMN IF NOT EXISTS cost_usd DECIMAL(12,6) DEFAULT 0;
 
 CREATE TABLE IF NOT EXISTS execution_node_log (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -80,6 +111,17 @@ CREATE TABLE IF NOT EXISTS llm_provider_config (
   base_url VARCHAR(255),
   api_key VARCHAR(512),
   enabled TINYINT NOT NULL DEFAULT 1,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS api_key (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(64) NOT NULL,
+  key_hash VARCHAR(200) NOT NULL UNIQUE,
+  owner_user_id BIGINT NOT NULL,
+  enabled TINYINT NOT NULL DEFAULT 1,
+  expires_at TIMESTAMP,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -123,4 +165,76 @@ CREATE TABLE IF NOT EXISTS knowledge_chunk (
   embedding CLOB,
   embedding_model VARCHAR(64),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS approval_task (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  run_id VARCHAR(64) NOT NULL,
+  workflow_id BIGINT,
+  node_id VARCHAR(64) NOT NULL,
+  user_id BIGINT,
+  title VARCHAR(255) NOT NULL,
+  content CLOB,
+  status VARCHAR(16) NOT NULL DEFAULT 'PENDING',
+  decision_comment VARCHAR(1000),
+  decided_by BIGINT,
+  expires_at TIMESTAMP,
+  decided_at TIMESTAMP,
+  deleted TINYINT NOT NULL DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_approval_status ON approval_task(status);
+
+CREATE TABLE IF NOT EXISTS agent_memory (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  workflow_id BIGINT,
+  user_id BIGINT,
+  scope VARCHAR(16) NOT NULL DEFAULT 'workflow',
+  memory_type VARCHAR(32) NOT NULL DEFAULT 'fact',
+  content CLOB NOT NULL,
+  tags VARCHAR(512),
+  source_node_id VARCHAR(64),
+  embedding CLOB,
+  embedding_model VARCHAR(64),
+  deleted TINYINT NOT NULL DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_agent_memory_scope ON agent_memory(scope);
+
+CREATE TABLE IF NOT EXISTS workflow_trigger (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  workflow_id BIGINT NOT NULL,
+  user_id BIGINT,
+  name VARCHAR(128) NOT NULL,
+  type VARCHAR(16) NOT NULL DEFAULT 'CRON',
+  enabled TINYINT NOT NULL DEFAULT 1,
+  cron_expression VARCHAR(128),
+  timezone VARCHAR(64) NOT NULL DEFAULT 'Asia/Shanghai',
+  webhook_token VARCHAR(64) UNIQUE,
+  input_data CLOB,
+  last_run_id VARCHAR(64),
+  last_status VARCHAR(16),
+  last_run_at TIMESTAMP,
+  next_run_at TIMESTAMP,
+  deleted TINYINT NOT NULL DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS mcp_server (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  user_id BIGINT NOT NULL,
+  name VARCHAR(128) NOT NULL,
+  url VARCHAR(2048) NOT NULL,
+  headers_cipher CLOB,
+  allowed_tools CLOB,
+  tools CLOB,
+  timeout_ms INT NOT NULL DEFAULT 15000,
+  enabled TINYINT NOT NULL DEFAULT 1,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

@@ -106,6 +106,51 @@ public class KnowledgeBaseService {
         return KnowledgeDocumentVO.of(document);
     }
 
+    /**
+     * 供 ai-service 的 knowledge_upsert 节点调用：同一知识库内按标题覆盖写入并立即建索引。
+     */
+    @Transactional
+    public KnowledgeDocumentVO upsertForRuntime(Long knowledgeBaseId, String title, String content) {
+        getEntity(knowledgeBaseId);
+        String body = content == null ? "" : content.trim();
+        if (body.isEmpty()) {
+            throw new BizException("文档内容不能为空");
+        }
+        if (body.length() > 200_000) {
+            throw new BizException("文档内容不能超过 200000 字");
+        }
+        String docTitle = title == null || title.isBlank()
+                ? "runtime-" + System.currentTimeMillis()
+                : title.trim();
+        if (docTitle.length() > 255) {
+            throw new BizException("文档标题不能超过 255 字");
+        }
+
+        KnowledgeDocument document = documentMapper.selectOne(new LambdaQueryWrapper<KnowledgeDocument>()
+                .eq(KnowledgeDocument::getKnowledgeBaseId, knowledgeBaseId)
+                .eq(KnowledgeDocument::getTitle, docTitle)
+                .last("LIMIT 1"));
+        if (document == null) {
+            document = new KnowledgeDocument();
+            document.setKnowledgeBaseId(knowledgeBaseId);
+            document.setTitle(docTitle);
+            document.setSourceType("NODE");
+            document.setContent(body);
+            document.setCharCount(body.length());
+            document.setStatus("PENDING");
+            document.setChunkCount(0);
+            documentMapper.insert(document);
+        } else {
+            document.setContent(body);
+            document.setCharCount(body.length());
+            document.setSourceType("NODE");
+            documentMapper.updateById(document);
+            chunkMapper.delete(new LambdaQueryWrapper<KnowledgeChunk>()
+                    .eq(KnowledgeChunk::getDocumentId, document.getId()));
+        }
+        return indexDocument(knowledgeBaseId, document.getId());
+    }
+
     @Transactional
     public KnowledgeDocumentVO uploadTextFile(Long knowledgeBaseId, MultipartFile file) {
         if (file == null || file.isEmpty()) {

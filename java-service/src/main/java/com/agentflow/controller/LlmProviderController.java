@@ -47,4 +47,9 @@ public class LlmProviderController {
         return ApiResponse.ok(llmProviderService.test(provider,
                 request == null ? new ProviderTestRequest() : request));
     }
+
+    @GetMapping("/{provider}/models")
+    public ApiResponse<JsonNode> models(@PathVariable String provider) {
+        return ApiResponse.ok(llmProviderService.models(provider));
+    }
 }

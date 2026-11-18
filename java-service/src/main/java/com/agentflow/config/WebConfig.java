@@ -23,8 +23,7 @@ public class WebConfig implements WebMvcConfigurer {
                 .excludePathPatterns(
                         "/api/auth/login",
                         "/api/system/health",
-                        "/api/system/ai-health",
-                        "/api/files/**");
+                        "/api/system/ai-health");
     }
 
     @Override

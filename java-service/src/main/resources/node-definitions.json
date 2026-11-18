@@ -15,6 +15,19 @@
         "default": [],
         "placeholder": "回车添加变量名，如 topic",
         "help": "仅用于提示，缺少时会打印告警日志"
+      },
+      {
+        "type": "outputSchema",
+        "key": "__outputSchema__",
+        "label": "节点输出字段",
+        "hasValueKey": true,
+        "fields": [
+          {
+            "key": "value",
+            "label": "运行时输入",
+            "type": "object"
+          }
+        ]
       }
     ]
   },
@@ -53,6 +66,18 @@
             "value": "aiping"
           },
           {
+            "label": "阶跃星辰 StepFun",
+            "value": "step"
+          },
+          {
+            "label": "APIFree / SkyClaw",
+            "value": "apifree"
+          },
+          {
+            "label": "火山方舟 Agent Plan",
+            "value": "volcengine"
+          },
+          {
             "label": "Mock（本地演示）",
             "value": "mock"
           }
@@ -66,30 +91,38 @@
         "options": [
           {
             "label": "OpenAI / gpt-4o-mini",
-            "value": "gpt-4o-mini"
+            "value": "gpt-4o-mini",
+            "provider": "openai"
           },
           {
             "label": "OpenAI / gpt-4o",
-            "value": "gpt-4o"
+            "value": "gpt-4o",
+            "provider": "openai"
           },
           {
             "label": "DeepSeek / deepseek-chat",
-            "value": "deepseek-chat"
+            "value": "deepseek-chat",
+            "provider": "deepseek"
           },
           {
             "label": "通义 / qwen-plus",
-            "value": "qwen-plus"
+            "value": "qwen-plus",
+            "provider": "qwen"
           },
           {
             "label": "智谱 / glm-4-flash",
-            "value": "glm-4-flash"
+            "value": "glm-4-flash",
+            "provider": "zhipu"
           },
           {
             "label": "Mock / agentflow-mock",
-            "value": "agentflow-mock"
+            "value": "agentflow-mock",
+            "provider": "mock"
           }
         ],
-        "default": "gpt-4o-mini"
+        "default": "gpt-4o-mini",
+        "dynamic": "providerModels",
+        "providerField": "provider"
       },
       {
         "key": "systemPrompt",
@@ -125,7 +158,7 @@
       {
         "key": "skillIds",
         "label": "挂载技能",
-        "type": "multiselect",
+        "type": "skills",
         "options": [
           {
             "label": "结构化摘要",
@@ -141,146 +174,348 @@
           }
         ],
         "default": []
+      },
+      {
+        "key": "memoryScope",
+        "label": "召回长期记忆",
+        "type": "select",
+        "default": "",
+        "options": [
+          {
+            "label": "不召回",
+            "value": ""
+          },
+          {
+            "label": "当前工作流",
+            "value": "workflow"
+          },
+          {
+            "label": "当前用户",
+            "value": "user"
+          },
+          {
+            "label": "全局共享",
+            "value": "global"
+          }
+        ],
+        "help": "执行前按用户提示词召回记忆，自动拼进系统提示词；召回失败只告警，不阻断执行"
+      },
+      {
+        "key": "memoryTopK",
+        "label": "记忆条数",
+        "type": "number",
+        "min": 1,
+        "max": 10,
+        "step": 1,
+        "default": 4,
+        "visibleWhen": {
+          "memoryScope": [
+            "workflow",
+            "user",
+            "global"
+          ]
+        }
+      },
+      {
+        "key": "memoryProvider",
+        "label": "记忆向量服务商",
+        "type": "select",
+        "options": [
+          {
+            "label": "OpenAI",
+            "value": "openai"
+          },
+          {
+            "label": "DeepSeek",
+            "value": "deepseek"
+          },
+          {
+            "label": "通义千问",
+            "value": "qwen"
+          },
+          {
+            "label": "智谱 GLM",
+            "value": "zhipu"
+          },
+          {
+            "label": "AiPing",
+            "value": "aiping"
+          },
+          {
+            "label": "阶跃星辰 StepFun",
+            "value": "step"
+          },
+          {
+            "label": "APIFree / SkyClaw",
+            "value": "apifree"
+          },
+          {
+            "label": "火山方舟 Agent Plan",
+            "value": "volcengine"
+          },
+          {
+            "label": "Mock（本地演示）",
+            "value": "mock"
+          }
+        ],
+        "default": "mock",
+        "visibleWhen": {
+          "memoryScope": [
+            "workflow",
+            "user",
+            "global"
+          ]
+        }
+      },
+      {
+        "key": "memoryModel",
+        "label": "记忆向量模型",
+        "type": "input",
+        "default": "text-embedding-3-small",
+        "visibleWhen": {
+          "memoryScope": [
+            "workflow",
+            "user",
+            "global"
+          ]
+        }
+      },
+      {
+        "type": "outputSchema",
+        "key": "__outputSchema__",
+        "label": "节点输出字段",
+        "hasValueKey": false,
+        "fields": [
+          {
+            "key": "text",
+            "label": "文本输出",
+            "type": "string"
+          },
+          {
+            "key": "provider",
+            "label": "服务商",
+            "type": "string"
+          },
+          {
+            "key": "model",
+            "label": "模型",
+            "type": "string"
+          },
+          {
+            "key": "usage",
+            "label": "用量",
+            "type": "object"
+          },
+          {
+            "key": "mock",
+            "label": "是否模拟",
+            "type": "boolean"
+          }
+        ]
       }
     ]
   },
   {
     "type": "react_agent",
     "name": "智能体",
-    "category": "AI",
+    "category": "智能体",
     "icon": "Cpu",
     "color": "#8b5cf6",
     "description": "带工具的 ReAct 智能体：可检索知识库、抓取网页、读取输入与加载技能",
     "sort": 22,
     "configSchema": [
       {
+        "key": "skillIds",
+        "label": "挂载技能",
+        "type": "skills",
+        "default": []
+      },
+      {
+        "key": "mcpServerIds",
+        "label": "挂载 MCP 服务",
+        "type": "mcpServers",
+        "default": [],
+        "help": "仅使用服务配置中明确授权的工具；模拟模式不会连接 MCP"
+      },
+      {
         "key": "provider",
         "label": "模型厂商",
         "type": "select",
-        "default": "openai",
         "options": [
-          { "label": "OpenAI", "value": "openai" },
-          { "label": "DeepSeek", "value": "deepseek" },
-          { "label": "通义千问", "value": "qwen" },
-          { "label": "智谱 GLM", "value": "zhipu" },
-          { "label": "AiPing", "value": "aiping" },
-          { "label": "Mock（本地演示）", "value": "mock" }
-        ]
+          {
+            "label": "OpenAI",
+            "value": "openai"
+          },
+          {
+            "label": "DeepSeek",
+            "value": "deepseek"
+          },
+          {
+            "label": "通义千问",
+            "value": "qwen"
+          },
+          {
+            "label": "智谱 GLM",
+            "value": "zhipu"
+          },
+          {
+            "label": "AiPing",
+            "value": "aiping"
+          },
+          {
+            "label": "阶跃星辰 StepFun",
+            "value": "step"
+          },
+          {
+            "label": "APIFree / SkyClaw",
+            "value": "apifree"
+          },
+          {
+            "label": "火山方舟 Agent Plan",
+            "value": "volcengine"
+          },
+          {
+            "label": "Mock（本地演示）",
+            "value": "mock"
+          }
+        ],
+        "default": "openai"
       },
-      { "key": "model", "label": "模型", "type": "input", "default": "gpt-4o-mini" },
-      { "key": "systemPrompt", "label": "系统提示词", "type": "textarea", "rows": 3, "default": "你是一个会使用工具的助手。" },
-      { "key": "prompt", "label": "任务", "type": "textarea", "rows": 4, "default": "{{input}}" },
-      { "key": "maxSteps", "label": "最大步数", "type": "number", "min": 1, "max": 8, "step": 1, "default": 4 },
-      { "key": "knowledgeBaseId", "label": "知识库（供知识检索工具）", "type": "knowledge", "default": "" },
+      {
+        "key": "model",
+        "label": "模型",
+        "type": "input",
+        "default": "gpt-4o-mini"
+      },
+      {
+        "key": "systemPrompt",
+        "label": "系统提示词",
+        "type": "textarea",
+        "rows": 3,
+        "default": "你是一个会使用工具的助手。"
+      },
+      {
+        "key": "prompt",
+        "label": "任务",
+        "type": "textarea",
+        "rows": 4,
+        "default": "{{input}}"
+      },
+      {
+        "key": "maxSteps",
+        "label": "最大步数",
+        "type": "number",
+        "min": 1,
+        "max": 8,
+        "step": 1,
+        "default": 4
+      },
+      {
+        "key": "knowledgeBaseId",
+        "label": "知识库（供知识检索工具）",
+        "type": "knowledge",
+        "default": ""
+      },
       {
         "key": "toolIds",
         "label": "启用工具",
         "type": "multiselect",
-        "default": ["read_input"],
+        "default": [
+          "read_input"
+        ],
         "options": [
-          { "label": "读取输入", "value": "read_input" },
-          { "label": "加载技能", "value": "load_skill" },
-          { "label": "知识检索", "value": "knowledge_search" },
-          { "label": "网页抓取", "value": "web_fetch" }
+          {
+            "label": "读取输入",
+            "value": "read_input"
+          },
+          {
+            "label": "加载技能",
+            "value": "load_skill"
+          },
+          {
+            "label": "知识检索",
+            "value": "knowledge_search"
+          },
+          {
+            "label": "网页抓取",
+            "value": "web_fetch"
+          },
+          {
+            "label": "联网搜索",
+            "value": "web_search"
+          },
+          {
+            "label": "读取文件",
+            "value": "file_read"
+          },
+          {
+            "label": "写入文件",
+            "value": "file_write"
+          },
+          {
+            "label": "文件列表",
+            "value": "file_list"
+          }
+        ]
+      },
+      {
+        "type": "outputSchema",
+        "key": "__outputSchema__",
+        "label": "节点输出字段",
+        "hasValueKey": false,
+        "fields": [
+          {
+            "key": "text",
+            "label": "文本输出",
+            "type": "string"
+          },
+          {
+            "key": "steps",
+            "label": "执行步骤",
+            "type": "array"
+          },
+          {
+            "key": "toolCalls",
+            "label": "工具调用数",
+            "type": "number"
+          },
+          {
+            "key": "provider",
+            "label": "服务商",
+            "type": "string"
+          },
+          {
+            "key": "model",
+            "label": "模型",
+            "type": "string"
+          },
+          {
+            "key": "usage",
+            "label": "用量",
+            "type": "object"
+          },
+          {
+            "key": "mock",
+            "label": "是否模拟",
+            "type": "boolean"
+          },
+          {
+            "key": "exceededSteps",
+            "label": "是否超出步数",
+            "type": "boolean"
+          }
         ]
       }
-    ]
-  },
-  {
-    "type": "image_generate",
-    "name": "图片生成",
-    "category": "AI",
-    "icon": "Picture",
-    "color": "#f97316",
-    "description": "调用 OpenAI 兼容图像接口生成图片，无 Key 时生成占位图",
-    "sort": 26,
-    "configSchema": [
-      {
-        "key": "provider",
-        "label": "服务商",
-        "type": "select",
-        "default": "mock",
-        "options": [
-          { "label": "Mock（占位图片）", "value": "mock" },
-          { "label": "OpenAI", "value": "openai" },
-          { "label": "AiPing", "value": "aiping" }
-        ]
-      },
-      { "key": "model", "label": "模型", "type": "input", "default": "gpt-image-1" },
-      { "key": "prompt", "label": "画面描述", "type": "textarea", "rows": 4, "default": "{{input}}" },
-      {
-        "key": "size",
-        "label": "尺寸",
-        "type": "select",
-        "default": "1024x1024",
-        "options": [
-          { "label": "1024x1024", "value": "1024x1024" },
-          { "label": "1024x1536", "value": "1024x1536" },
-          { "label": "1536x1024", "value": "1536x1024" }
-        ]
-      }
-    ]
-  },
-  {
-    "type": "vision_analyze",
-    "name": "视觉理解",
-    "category": "AI",
-    "icon": "View",
-    "color": "#e11d48",
-    "description": "把上游图片交给多模态模型分析",
-    "sort": 27,
-    "configSchema": [
-      {
-        "key": "provider",
-        "label": "模型厂商",
-        "type": "select",
-        "default": "openai",
-        "options": [
-          { "label": "OpenAI", "value": "openai" },
-          { "label": "DeepSeek", "value": "deepseek" },
-          { "label": "通义千问", "value": "qwen" },
-          { "label": "智谱 GLM", "value": "zhipu" },
-          { "label": "AiPing", "value": "aiping" },
-          { "label": "Mock（本地演示）", "value": "mock" }
-        ]
-      },
-      { "key": "model", "label": "模型", "type": "input", "default": "gpt-4o-mini" },
-      { "key": "imageUrl", "label": "图片地址", "type": "textarea", "rows": 2, "default": "", "help": "留空自动取上游图片输出，也可写 {{img.imageUrl}}" },
-      { "key": "prompt", "label": "分析要求", "type": "textarea", "rows": 3, "default": "描述这张图片" }
-    ]
-  },
-  {
-    "type": "video_generate",
-    "name": "视频生成",
-    "category": "AI",
-    "icon": "Film",
-    "color": "#a855f7",
-    "description": "文生视频（提交任务+轮询）；无 Key 时生成占位海报",
-    "sort": 28,
-    "configSchema": [
-      {
-        "key": "provider",
-        "label": "服务商",
-        "type": "select",
-        "default": "mock",
-        "options": [
-          { "label": "Mock（占位海报）", "value": "mock" },
-          { "label": "OpenAI", "value": "openai" },
-          { "label": "AiPing", "value": "aiping" }
-        ]
-      },
-      { "key": "model", "label": "模型", "type": "input", "default": "video-01" },
-      { "key": "prompt", "label": "画面描述", "type": "textarea", "rows": 4, "default": "{{input}}" }
     ]
   },
   {
     "type": "knowledge",
     "name": "知识检索",
-    "category": "AI",
+    "category": "RAG",
     "icon": "Collection",
     "color": "#0ea5e9",
     "description": "从知识库检索相关片段，供下游提示词引用",
-    "sort": 25,
+    "sort": 50,
     "configSchema": [
       {
         "key": "knowledgeBaseId",
@@ -303,6 +538,2792 @@
         "max": 10,
         "step": 1,
         "default": 4
+      },
+      {
+        "type": "outputSchema",
+        "key": "__outputSchema__",
+        "label": "节点输出字段",
+        "hasValueKey": false,
+        "fields": [
+          {
+            "key": "text",
+            "label": "拼接文本",
+            "type": "string"
+          },
+          {
+            "key": "chunks",
+            "label": "检索片段",
+            "type": "array"
+          },
+          {
+            "key": "count",
+            "label": "片段数",
+            "type": "number"
+          },
+          {
+            "key": "knowledgeBaseId",
+            "label": "知识库 ID",
+            "type": "string"
+          },
+          {
+            "key": "query",
+            "label": "检索语句",
+            "type": "string"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "image_generate",
+    "name": "图片生成",
+    "category": "AI",
+    "icon": "Picture",
+    "color": "#f97316",
+    "description": "调用 OpenAI 兼容图像接口生成图片，无 Key 时生成占位图",
+    "sort": 26,
+    "configSchema": [
+      {
+        "key": "provider",
+        "label": "服务商",
+        "type": "select",
+        "default": "mock",
+        "options": [
+          {
+            "label": "Mock（占位图片）",
+            "value": "mock"
+          },
+          {
+            "label": "OpenAI",
+            "value": "openai"
+          },
+          {
+            "label": "AiPing",
+            "value": "aiping"
+          },
+          {
+            "label": "阶跃星辰 StepFun",
+            "value": "step"
+          },
+          {
+            "label": "火山方舟 Agent Plan",
+            "value": "volcengine"
+          }
+        ]
+      },
+      {
+        "key": "model",
+        "label": "模型",
+        "type": "input",
+        "default": "gpt-image-1",
+        "help": "StepFun 可用 step-2x-large / step-image-edit-2；火山方舟填图片模型 ID"
+      },
+      {
+        "key": "referenceImageUrl",
+        "label": "参考图地址",
+        "type": "textarea",
+        "rows": 2,
+        "default": "",
+        "help": "可选；StepFun 与火山方舟支持图生图 / 参考图"
+      },
+      {
+        "key": "prompt",
+        "label": "画面描述",
+        "type": "textarea",
+        "rows": 4,
+        "default": "{{input}}"
+      },
+      {
+        "key": "size",
+        "label": "尺寸",
+        "type": "select",
+        "default": "1024x1024",
+        "options": [
+          {
+            "label": "1024x1024",
+            "value": "1024x1024"
+          },
+          {
+            "label": "1024x1536",
+            "value": "1024x1536"
+          },
+          {
+            "label": "1536x1024",
+            "value": "1536x1024"
+          }
+        ]
+      },
+      {
+        "type": "outputSchema",
+        "key": "__outputSchema__",
+        "label": "节点输出字段",
+        "hasValueKey": false,
+        "fields": [
+          {
+            "key": "imageUrl",
+            "label": "图片地址",
+            "type": "string"
+          },
+          {
+            "key": "provider",
+            "label": "服务商",
+            "type": "string"
+          },
+          {
+            "key": "model",
+            "label": "模型",
+            "type": "string"
+          },
+          {
+            "key": "size",
+            "label": "尺寸",
+            "type": "string"
+          },
+          {
+            "key": "createdAt",
+            "label": "创建时间",
+            "type": "number"
+          },
+          {
+            "key": "mock",
+            "label": "是否模拟",
+            "type": "boolean"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "vision_analyze",
+    "name": "视觉理解",
+    "category": "AI",
+    "icon": "View",
+    "color": "#e11d48",
+    "description": "把上游图片交给多模态模型分析",
+    "sort": 27,
+    "configSchema": [
+      {
+        "key": "provider",
+        "label": "模型厂商",
+        "type": "select",
+        "default": "openai",
+        "options": [
+          {
+            "label": "OpenAI",
+            "value": "openai"
+          },
+          {
+            "label": "DeepSeek",
+            "value": "deepseek"
+          },
+          {
+            "label": "通义千问",
+            "value": "qwen"
+          },
+          {
+            "label": "智谱 GLM",
+            "value": "zhipu"
+          },
+          {
+            "label": "AiPing",
+            "value": "aiping"
+          },
+          {
+            "label": "Mock（本地演示）",
+            "value": "mock"
+          }
+        ]
+      },
+      {
+        "key": "model",
+        "label": "模型",
+        "type": "input",
+        "default": "gpt-4o-mini"
+      },
+      {
+        "key": "imageUrl",
+        "label": "图片地址",
+        "type": "textarea",
+        "rows": 2,
+        "default": "",
+        "help": "留空自动取上游图片输出，也可写 {{img.imageUrl}}"
+      },
+      {
+        "key": "prompt",
+        "label": "分析要求",
+        "type": "textarea",
+        "rows": 3,
+        "default": "描述这张图片"
+      },
+      {
+        "type": "outputSchema",
+        "key": "__outputSchema__",
+        "label": "节点输出字段",
+        "hasValueKey": false,
+        "fields": [
+          {
+            "key": "text",
+            "label": "分析结果",
+            "type": "string"
+          },
+          {
+            "key": "imageUrl",
+            "label": "图片地址",
+            "type": "string"
+          },
+          {
+            "key": "model",
+            "label": "模型",
+            "type": "string"
+          },
+          {
+            "key": "usage",
+            "label": "用量",
+            "type": "object"
+          },
+          {
+            "key": "mock",
+            "label": "是否模拟",
+            "type": "boolean"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "video_generate",
+    "name": "视频生成",
+    "category": "AI",
+    "icon": "Film",
+    "color": "#a855f7",
+    "description": "文生视频（提交任务+轮询）；无 Key 时生成占位海报",
+    "sort": 28,
+    "configSchema": [
+      {
+        "key": "provider",
+        "label": "服务商",
+        "type": "select",
+        "default": "mock",
+        "options": [
+          {
+            "label": "Mock（占位海报）",
+            "value": "mock"
+          },
+          {
+            "label": "OpenAI 兼容",
+            "value": "openai"
+          },
+          {
+            "label": "AiPing",
+            "value": "aiping"
+          },
+          {
+            "label": "Agnes AI",
+            "value": "agnes"
+          },
+          {
+            "label": "火山方舟 Agent Plan",
+            "value": "volcengine"
+          }
+        ]
+      },
+      {
+        "key": "model",
+        "label": "模型",
+        "type": "input",
+        "default": "video-01",
+        "help": "Agnes 可用 agnes-video-v2.0；火山方舟填视频模型 ID"
+      },
+      {
+        "key": "prompt",
+        "label": "画面描述",
+        "type": "textarea",
+        "rows": 4,
+        "default": "{{input}}"
+      },
+      {
+        "key": "referenceImageUrl",
+        "label": "首帧图片",
+        "type": "textarea",
+        "rows": 2,
+        "default": "",
+        "help": "可选；Agnes / 火山方舟支持首帧或参考图"
+      },
+      {
+        "key": "duration",
+        "label": "时长（秒）",
+        "type": "number",
+        "min": 1,
+        "max": 15,
+        "step": 1,
+        "default": 5
+      },
+      {
+        "key": "resolution",
+        "label": "分辨率",
+        "type": "input",
+        "default": "",
+        "placeholder": "如 720p / 1080p，留空由服务商决定"
+      },
+      {
+        "key": "ratio",
+        "label": "画幅比例",
+        "type": "input",
+        "default": "adaptive",
+        "placeholder": "adaptive / 16:9 / 9:16"
+      },
+      {
+        "type": "outputSchema",
+        "key": "__outputSchema__",
+        "label": "节点输出字段",
+        "hasValueKey": false,
+        "fields": [
+          {
+            "key": "videoUrl",
+            "label": "视频地址",
+            "type": "string"
+          },
+          {
+            "key": "posterUrl",
+            "label": "海报地址",
+            "type": "string"
+          },
+          {
+            "key": "provider",
+            "label": "服务商",
+            "type": "string"
+          },
+          {
+            "key": "model",
+            "label": "模型",
+            "type": "string"
+          },
+          {
+            "key": "createdAt",
+            "label": "创建时间",
+            "type": "number"
+          },
+          {
+            "key": "mock",
+            "label": "是否模拟",
+            "type": "boolean"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "plan_execute",
+    "name": "计划执行",
+    "category": "智能体",
+    "icon": "List",
+    "color": "#7c3aed",
+    "description": "Plan-and-Execute：先拆计划，再逐步执行并汇总交付",
+    "sort": 21,
+    "configSchema": [
+      {
+        "key": "provider",
+        "label": "模型厂商",
+        "type": "select",
+        "options": [
+          {
+            "label": "OpenAI",
+            "value": "openai"
+          },
+          {
+            "label": "DeepSeek",
+            "value": "deepseek"
+          },
+          {
+            "label": "通义千问",
+            "value": "qwen"
+          },
+          {
+            "label": "智谱 GLM",
+            "value": "zhipu"
+          },
+          {
+            "label": "AiPing",
+            "value": "aiping"
+          },
+          {
+            "label": "阶跃星辰 StepFun",
+            "value": "step"
+          },
+          {
+            "label": "APIFree / SkyClaw",
+            "value": "apifree"
+          },
+          {
+            "label": "火山方舟 Agent Plan",
+            "value": "volcengine"
+          },
+          {
+            "label": "Mock（本地演示）",
+            "value": "mock"
+          }
+        ],
+        "default": "openai"
+      },
+      {
+        "key": "model",
+        "label": "模型",
+        "type": "input",
+        "default": "gpt-4o-mini"
+      },
+      {
+        "key": "goal",
+        "label": "总体目标",
+        "type": "textarea",
+        "rows": 3,
+        "default": "{{input}}"
+      },
+      {
+        "key": "maxSteps",
+        "label": "最大步骤",
+        "type": "number",
+        "min": 1,
+        "max": 8,
+        "step": 1,
+        "default": 4
+      },
+      {
+        "key": "synthesize",
+        "label": "汇总各步结果",
+        "type": "switch",
+        "default": true,
+        "help": "关闭时直接拼接各步结果作为输出"
+      },
+      {
+        "key": "plannerPrompt",
+        "label": "规划提示词",
+        "type": "textarea",
+        "rows": 3,
+        "default": "",
+        "help": "留空使用内置提示词；要求模型只输出 JSON 字符串数组"
+      },
+      {
+        "key": "executorPrompt",
+        "label": "执行提示词",
+        "type": "textarea",
+        "rows": 3,
+        "default": "",
+        "help": "留空使用内置提示词"
+      },
+      {
+        "key": "synthesizePrompt",
+        "label": "汇总提示词",
+        "type": "textarea",
+        "rows": 3,
+        "default": "",
+        "help": "留空使用内置提示词"
+      },
+      {
+        "type": "outputSchema",
+        "key": "__outputSchema__",
+        "label": "节点输出字段",
+        "hasValueKey": false,
+        "fields": [
+          {
+            "key": "text",
+            "label": "最终交付",
+            "type": "string"
+          },
+          {
+            "key": "plan",
+            "label": "计划步骤",
+            "type": "array"
+          },
+          {
+            "key": "results",
+            "label": "各步结果",
+            "type": "array"
+          },
+          {
+            "key": "stepCount",
+            "label": "步骤数",
+            "type": "number"
+          },
+          {
+            "key": "provider",
+            "label": "服务商",
+            "type": "string"
+          },
+          {
+            "key": "model",
+            "label": "模型",
+            "type": "string"
+          },
+          {
+            "key": "usage",
+            "label": "用量",
+            "type": "object"
+          },
+          {
+            "key": "mock",
+            "label": "是否模拟",
+            "type": "boolean"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "reflection",
+    "name": "反思迭代",
+    "category": "智能体",
+    "icon": "Refresh",
+    "color": "#7c3aed",
+    "description": "Reflexion：初稿 → 评审打分 → 按意见修改，直到达标或轮数上限",
+    "sort": 29,
+    "configSchema": [
+      {
+        "key": "provider",
+        "label": "模型厂商",
+        "type": "select",
+        "options": [
+          {
+            "label": "OpenAI",
+            "value": "openai"
+          },
+          {
+            "label": "DeepSeek",
+            "value": "deepseek"
+          },
+          {
+            "label": "通义千问",
+            "value": "qwen"
+          },
+          {
+            "label": "智谱 GLM",
+            "value": "zhipu"
+          },
+          {
+            "label": "AiPing",
+            "value": "aiping"
+          },
+          {
+            "label": "阶跃星辰 StepFun",
+            "value": "step"
+          },
+          {
+            "label": "APIFree / SkyClaw",
+            "value": "apifree"
+          },
+          {
+            "label": "火山方舟 Agent Plan",
+            "value": "volcengine"
+          },
+          {
+            "label": "Mock（本地演示）",
+            "value": "mock"
+          }
+        ],
+        "default": "openai"
+      },
+      {
+        "key": "model",
+        "label": "模型",
+        "type": "input",
+        "default": "gpt-4o-mini"
+      },
+      {
+        "key": "prompt",
+        "label": "任务",
+        "type": "textarea",
+        "rows": 3,
+        "default": "{{input}}"
+      },
+      {
+        "key": "systemPrompt",
+        "label": "写作提示词",
+        "type": "textarea",
+        "rows": 3,
+        "default": ""
+      },
+      {
+        "key": "maxRounds",
+        "label": "最多修改轮数",
+        "type": "number",
+        "min": 0,
+        "max": 3,
+        "step": 1,
+        "default": 2
+      },
+      {
+        "key": "threshold",
+        "label": "达标分数",
+        "type": "number",
+        "min": 0,
+        "max": 100,
+        "step": 5,
+        "default": 85,
+        "help": "评审得分达到该分数即停止，避免无意义迭代"
+      },
+      {
+        "key": "critiquePrompt",
+        "label": "评审提示词",
+        "type": "textarea",
+        "rows": 3,
+        "default": "",
+        "help": "留空使用内置提示词；要求只输出 JSON {score, issues, suggestions}"
+      },
+      {
+        "key": "revisePrompt",
+        "label": "修改提示词",
+        "type": "textarea",
+        "rows": 3,
+        "default": "",
+        "help": "留空使用内置提示词"
+      },
+      {
+        "type": "outputSchema",
+        "key": "__outputSchema__",
+        "label": "节点输出字段",
+        "hasValueKey": false,
+        "fields": [
+          {
+            "key": "text",
+            "label": "最终稿",
+            "type": "string"
+          },
+          {
+            "key": "score",
+            "label": "评审得分",
+            "type": "number"
+          },
+          {
+            "key": "roundsUsed",
+            "label": "评审轮数",
+            "type": "number"
+          },
+          {
+            "key": "history",
+            "label": "评审记录",
+            "type": "array"
+          },
+          {
+            "key": "provider",
+            "label": "服务商",
+            "type": "string"
+          },
+          {
+            "key": "model",
+            "label": "模型",
+            "type": "string"
+          },
+          {
+            "key": "usage",
+            "label": "用量",
+            "type": "object"
+          },
+          {
+            "key": "mock",
+            "label": "是否模拟",
+            "type": "boolean"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "multi_agent",
+    "name": "多智能体",
+    "category": "智能体",
+    "icon": "UserFilled",
+    "color": "#7c3aed",
+    "description": "多角色讨论 / 辩论，由主持人综合共识与分歧",
+    "sort": 30,
+    "configSchema": [
+      {
+        "key": "provider",
+        "label": "模型厂商",
+        "type": "select",
+        "options": [
+          {
+            "label": "OpenAI",
+            "value": "openai"
+          },
+          {
+            "label": "DeepSeek",
+            "value": "deepseek"
+          },
+          {
+            "label": "通义千问",
+            "value": "qwen"
+          },
+          {
+            "label": "智谱 GLM",
+            "value": "zhipu"
+          },
+          {
+            "label": "AiPing",
+            "value": "aiping"
+          },
+          {
+            "label": "阶跃星辰 StepFun",
+            "value": "step"
+          },
+          {
+            "label": "APIFree / SkyClaw",
+            "value": "apifree"
+          },
+          {
+            "label": "火山方舟 Agent Plan",
+            "value": "volcengine"
+          },
+          {
+            "label": "Mock（本地演示）",
+            "value": "mock"
+          }
+        ],
+        "default": "openai"
+      },
+      {
+        "key": "model",
+        "label": "模型",
+        "type": "input",
+        "default": "gpt-4o-mini"
+      },
+      {
+        "key": "topic",
+        "label": "讨论主题",
+        "type": "textarea",
+        "rows": 3,
+        "default": "{{input}}"
+      },
+      {
+        "key": "agents",
+        "label": "角色列表（JSON）",
+        "type": "textarea",
+        "rows": 5,
+        "default": "[{\"name\":\"产品经理\",\"role\":\"关注用户价值与优先级\"},{\"name\":\"工程师\",\"role\":\"关注实现成本与风险\"},{\"name\":\"批评者\",\"role\":\"挑出漏洞与反例\"}]",
+        "help": "每项包含 name 与 role，至少 2 个、最多 6 个；支持模板变量"
+      },
+      {
+        "key": "rounds",
+        "label": "讨论轮数",
+        "type": "number",
+        "min": 1,
+        "max": 3,
+        "step": 1,
+        "default": 2
+      },
+      {
+        "key": "moderatorPrompt",
+        "label": "主持人提示词",
+        "type": "textarea",
+        "rows": 3,
+        "default": "",
+        "help": "留空使用内置提示词；主持人负责列共识、分歧和结论"
+      },
+      {
+        "type": "outputSchema",
+        "key": "__outputSchema__",
+        "label": "节点输出字段",
+        "hasValueKey": false,
+        "fields": [
+          {
+            "key": "text",
+            "label": "综合结论",
+            "type": "string"
+          },
+          {
+            "key": "transcript",
+            "label": "讨论记录",
+            "type": "array"
+          },
+          {
+            "key": "rounds",
+            "label": "讨论轮数",
+            "type": "number"
+          },
+          {
+            "key": "agentCount",
+            "label": "角色数",
+            "type": "number"
+          },
+          {
+            "key": "provider",
+            "label": "服务商",
+            "type": "string"
+          },
+          {
+            "key": "model",
+            "label": "模型",
+            "type": "string"
+          },
+          {
+            "key": "usage",
+            "label": "用量",
+            "type": "object"
+          },
+          {
+            "key": "mock",
+            "label": "是否模拟",
+            "type": "boolean"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "evaluator",
+    "name": "结果评审",
+    "category": "智能体",
+    "icon": "CircleCheck",
+    "color": "#7c3aed",
+    "description": "按评分标准打分并给出修改建议，可作为质量门",
+    "sort": 31,
+    "configSchema": [
+      {
+        "key": "provider",
+        "label": "模型厂商",
+        "type": "select",
+        "options": [
+          {
+            "label": "OpenAI",
+            "value": "openai"
+          },
+          {
+            "label": "DeepSeek",
+            "value": "deepseek"
+          },
+          {
+            "label": "通义千问",
+            "value": "qwen"
+          },
+          {
+            "label": "智谱 GLM",
+            "value": "zhipu"
+          },
+          {
+            "label": "AiPing",
+            "value": "aiping"
+          },
+          {
+            "label": "阶跃星辰 StepFun",
+            "value": "step"
+          },
+          {
+            "label": "APIFree / SkyClaw",
+            "value": "apifree"
+          },
+          {
+            "label": "火山方舟 Agent Plan",
+            "value": "volcengine"
+          },
+          {
+            "label": "Mock（本地演示）",
+            "value": "mock"
+          }
+        ],
+        "default": "openai"
+      },
+      {
+        "key": "model",
+        "label": "模型",
+        "type": "input",
+        "default": "gpt-4o-mini"
+      },
+      {
+        "key": "content",
+        "label": "待评审内容",
+        "type": "textarea",
+        "rows": 4,
+        "default": "",
+        "help": "留空自动取直接上游节点的输出"
+      },
+      {
+        "key": "rubric",
+        "label": "评分标准",
+        "type": "textarea",
+        "rows": 3,
+        "default": "内容准确、结构清晰、没有编造事实"
+      },
+      {
+        "key": "threshold",
+        "label": "通过分数",
+        "type": "number",
+        "min": 0,
+        "max": 100,
+        "step": 5,
+        "default": 70
+      },
+      {
+        "key": "failOnLow",
+        "label": "未通过时中断",
+        "type": "switch",
+        "default": false,
+        "help": "关闭时输出 passed=false，由下游条件分支决定处理方式"
+      },
+      {
+        "key": "systemPrompt",
+        "label": "评审提示词",
+        "type": "textarea",
+        "rows": 3,
+        "default": "",
+        "help": "留空使用内置提示词；要求只输出 JSON {score, issues, feedback}"
+      },
+      {
+        "type": "outputSchema",
+        "key": "__outputSchema__",
+        "label": "节点输出字段",
+        "hasValueKey": false,
+        "fields": [
+          {
+            "key": "passed",
+            "label": "是否通过",
+            "type": "boolean"
+          },
+          {
+            "key": "score",
+            "label": "评分",
+            "type": "number"
+          },
+          {
+            "key": "feedback",
+            "label": "评审意见",
+            "type": "string"
+          },
+          {
+            "key": "issues",
+            "label": "问题列表",
+            "type": "array"
+          },
+          {
+            "key": "text",
+            "label": "评审意见",
+            "type": "string"
+          },
+          {
+            "key": "provider",
+            "label": "服务商",
+            "type": "string"
+          },
+          {
+            "key": "model",
+            "label": "模型",
+            "type": "string"
+          },
+          {
+            "key": "usage",
+            "label": "用量",
+            "type": "object"
+          },
+          {
+            "key": "mock",
+            "label": "是否模拟",
+            "type": "boolean"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "orchestrator",
+    "name": "协调执行",
+    "category": "智能体",
+    "icon": "Operation",
+    "color": "#7c3aed",
+    "description": "Orchestrator-Workers：挑选子工作流执行并汇总结果",
+    "sort": 34,
+    "configSchema": [
+      {
+        "key": "provider",
+        "label": "模型厂商",
+        "type": "select",
+        "options": [
+          {
+            "label": "OpenAI",
+            "value": "openai"
+          },
+          {
+            "label": "DeepSeek",
+            "value": "deepseek"
+          },
+          {
+            "label": "通义千问",
+            "value": "qwen"
+          },
+          {
+            "label": "智谱 GLM",
+            "value": "zhipu"
+          },
+          {
+            "label": "AiPing",
+            "value": "aiping"
+          },
+          {
+            "label": "阶跃星辰 StepFun",
+            "value": "step"
+          },
+          {
+            "label": "APIFree / SkyClaw",
+            "value": "apifree"
+          },
+          {
+            "label": "火山方舟 Agent Plan",
+            "value": "volcengine"
+          },
+          {
+            "label": "Mock（本地演示）",
+            "value": "mock"
+          }
+        ],
+        "default": "openai"
+      },
+      {
+        "key": "model",
+        "label": "模型",
+        "type": "input",
+        "default": "gpt-4o-mini"
+      },
+      {
+        "key": "task",
+        "label": "总任务",
+        "type": "textarea",
+        "rows": 3,
+        "default": "{{input}}"
+      },
+      {
+        "key": "workers",
+        "label": "执行者（JSON）",
+        "type": "textarea",
+        "rows": 6,
+        "default": "[{\"name\":\"调研员\",\"description\":\"收集资料并给出要点\",\"workflowId\":\"\"},{\"name\":\"撰写员\",\"description\":\"根据资料成稿\",\"workflowId\":\"\"}]",
+        "help": "每项 name/description/workflowId，workflowId 填子工作流 ID；最多 6 个"
+      },
+      {
+        "key": "maxWorkers",
+        "label": "最多执行者",
+        "type": "number",
+        "min": 1,
+        "max": 4,
+        "step": 1,
+        "default": 2
+      },
+      {
+        "key": "concurrency",
+        "label": "并发数",
+        "type": "number",
+        "min": 1,
+        "max": 3,
+        "step": 1,
+        "default": 2
+      },
+      {
+        "key": "aggregate",
+        "label": "汇总结果",
+        "type": "switch",
+        "default": true,
+        "help": "关闭时直接拼接各执行者输出，节省一次模型调用"
+      },
+      {
+        "key": "plannerPrompt",
+        "label": "选择提示词",
+        "type": "textarea",
+        "rows": 3,
+        "default": "",
+        "help": "留空使用内置提示词；要求只输出 JSON {workers, reason}"
+      },
+      {
+        "key": "aggregatorPrompt",
+        "label": "汇总提示词",
+        "type": "textarea",
+        "rows": 3,
+        "default": "",
+        "help": "留空使用内置提示词"
+      },
+      {
+        "type": "outputSchema",
+        "key": "__outputSchema__",
+        "label": "节点输出字段",
+        "hasValueKey": false,
+        "fields": [
+          {
+            "key": "text",
+            "label": "最终交付",
+            "type": "string"
+          },
+          {
+            "key": "selectedWorkers",
+            "label": "选中执行者",
+            "type": "array"
+          },
+          {
+            "key": "results",
+            "label": "执行结果",
+            "type": "array"
+          },
+          {
+            "key": "reason",
+            "label": "选择原因",
+            "type": "string"
+          },
+          {
+            "key": "workerCount",
+            "label": "执行者数量",
+            "type": "number"
+          },
+          {
+            "key": "elapsedMs",
+            "label": "耗时",
+            "type": "number"
+          },
+          {
+            "key": "provider",
+            "label": "服务商",
+            "type": "string"
+          },
+          {
+            "key": "model",
+            "label": "模型",
+            "type": "string"
+          },
+          {
+            "key": "usage",
+            "label": "用量",
+            "type": "object"
+          },
+          {
+            "key": "mock",
+            "label": "是否模拟",
+            "type": "boolean"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "self_consistency",
+    "name": "自洽投票",
+    "category": "智能体",
+    "icon": "DataAnalysis",
+    "color": "#7c3aed",
+    "description": "Self-Consistency：多次采样后聚合，降低单次生成波动",
+    "sort": 32,
+    "configSchema": [
+      {
+        "key": "provider",
+        "label": "模型厂商",
+        "type": "select",
+        "options": [
+          {
+            "label": "OpenAI",
+            "value": "openai"
+          },
+          {
+            "label": "DeepSeek",
+            "value": "deepseek"
+          },
+          {
+            "label": "通义千问",
+            "value": "qwen"
+          },
+          {
+            "label": "智谱 GLM",
+            "value": "zhipu"
+          },
+          {
+            "label": "AiPing",
+            "value": "aiping"
+          },
+          {
+            "label": "阶跃星辰 StepFun",
+            "value": "step"
+          },
+          {
+            "label": "APIFree / SkyClaw",
+            "value": "apifree"
+          },
+          {
+            "label": "火山方舟 Agent Plan",
+            "value": "volcengine"
+          },
+          {
+            "label": "Mock（本地演示）",
+            "value": "mock"
+          }
+        ],
+        "default": "openai"
+      },
+      {
+        "key": "model",
+        "label": "模型",
+        "type": "input",
+        "default": "gpt-4o-mini"
+      },
+      {
+        "key": "prompt",
+        "label": "任务",
+        "type": "textarea",
+        "rows": 3,
+        "default": "{{input}}"
+      },
+      {
+        "key": "samples",
+        "label": "采样次数",
+        "type": "number",
+        "min": 2,
+        "max": 7,
+        "step": 1,
+        "default": 3
+      },
+      {
+        "key": "systemPrompt",
+        "label": "采样提示词",
+        "type": "textarea",
+        "rows": 3,
+        "default": ""
+      },
+      {
+        "key": "aggregatorPrompt",
+        "label": "聚合提示词",
+        "type": "textarea",
+        "rows": 3,
+        "default": "",
+        "help": "留空使用内置提示词；负责比较候选并给出最终答案"
+      },
+      {
+        "type": "outputSchema",
+        "key": "__outputSchema__",
+        "label": "节点输出字段",
+        "hasValueKey": false,
+        "fields": [
+          {
+            "key": "text",
+            "label": "最终答案",
+            "type": "string"
+          },
+          {
+            "key": "candidates",
+            "label": "候选答案",
+            "type": "array"
+          },
+          {
+            "key": "agreement",
+            "label": "一致率",
+            "type": "number"
+          },
+          {
+            "key": "samples",
+            "label": "采样数",
+            "type": "number"
+          },
+          {
+            "key": "provider",
+            "label": "服务商",
+            "type": "string"
+          },
+          {
+            "key": "model",
+            "label": "模型",
+            "type": "string"
+          },
+          {
+            "key": "usage",
+            "label": "用量",
+            "type": "object"
+          },
+          {
+            "key": "mock",
+            "label": "是否模拟",
+            "type": "boolean"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "human_approval",
+    "name": "人工审批",
+    "category": "编排",
+    "icon": "Stamp",
+    "color": "#f59e0b",
+    "description": "创建审批任务并等待通过 / 驳回，可接在发布、外发等敏感节点前",
+    "sort": 66,
+    "configSchema": [
+      {
+        "key": "title",
+        "label": "审批标题",
+        "type": "input",
+        "default": "工作流审批",
+        "help": "支持模板变量"
+      },
+      {
+        "key": "content",
+        "label": "审批内容",
+        "type": "textarea",
+        "rows": 4,
+        "default": "",
+        "help": "留空自动取直接上游输出；建议贴出将要发布或外发的内容"
+      },
+      {
+        "key": "waitSeconds",
+        "label": "最长等待（秒）",
+        "type": "number",
+        "min": 30,
+        "max": 600,
+        "step": 30,
+        "default": 120,
+        "help": "执行级超时会自动延长；超时后节点失败，需重新发起"
+      },
+      {
+        "key": "rejectBehavior",
+        "label": "驳回后",
+        "type": "select",
+        "default": "fail",
+        "options": [
+          {
+            "label": "节点失败，停止流程",
+            "value": "fail"
+          },
+          {
+            "label": "继续执行（approved=false）",
+            "value": "continue"
+          }
+        ]
+      },
+      {
+        "key": "autoApprove",
+        "label": "自动通过（演示）",
+        "type": "switch",
+        "default": false,
+        "help": "开启后不创建待办，直接返回通过；AI_MOCK_MODE=always 时也会自动通过"
+      },
+      {
+        "type": "outputSchema",
+        "key": "__outputSchema__",
+        "label": "节点输出字段",
+        "hasValueKey": false,
+        "fields": [
+          {
+            "key": "approved",
+            "label": "是否通过",
+            "type": "boolean"
+          },
+          {
+            "key": "approvalId",
+            "label": "审批任务 ID",
+            "type": "number"
+          },
+          {
+            "key": "status",
+            "label": "审批状态",
+            "type": "string"
+          },
+          {
+            "key": "comment",
+            "label": "审批意见",
+            "type": "string"
+          },
+          {
+            "key": "decidedBy",
+            "label": "处理人 ID",
+            "type": "number"
+          },
+          {
+            "key": "text",
+            "label": "审批意见",
+            "type": "string"
+          },
+          {
+            "key": "auto",
+            "label": "是否自动通过",
+            "type": "boolean"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "llm_router",
+    "name": "意图路由",
+    "category": "智能体",
+    "icon": "Guide",
+    "color": "#7c3aed",
+    "description": "LLM 语义路由：选择一个分支并跳转到对应节点",
+    "sort": 33,
+    "configSchema": [
+      {
+        "key": "provider",
+        "label": "模型厂商",
+        "type": "select",
+        "options": [
+          {
+            "label": "OpenAI",
+            "value": "openai"
+          },
+          {
+            "label": "DeepSeek",
+            "value": "deepseek"
+          },
+          {
+            "label": "通义千问",
+            "value": "qwen"
+          },
+          {
+            "label": "智谱 GLM",
+            "value": "zhipu"
+          },
+          {
+            "label": "AiPing",
+            "value": "aiping"
+          },
+          {
+            "label": "阶跃星辰 StepFun",
+            "value": "step"
+          },
+          {
+            "label": "APIFree / SkyClaw",
+            "value": "apifree"
+          },
+          {
+            "label": "火山方舟 Agent Plan",
+            "value": "volcengine"
+          },
+          {
+            "label": "Mock（本地演示）",
+            "value": "mock"
+          }
+        ],
+        "default": "openai"
+      },
+      {
+        "key": "model",
+        "label": "模型",
+        "type": "input",
+        "default": "gpt-4o-mini"
+      },
+      {
+        "key": "input",
+        "label": "路由输入",
+        "type": "textarea",
+        "rows": 3,
+        "default": "{{input}}"
+      },
+      {
+        "key": "routes",
+        "label": "分支表（JSON）",
+        "type": "textarea",
+        "rows": 7,
+        "default": "[{\"name\":\"技术问题\",\"description\":\"技术、代码、报错\",\"target\":\"\"},{\"name\":\"业务问题\",\"description\":\"流程、需求、数据\",\"target\":\"\"}]",
+        "help": "每项 name/description/target；target 填目标节点 ID，同一分支表最多 6 项"
+      },
+      {
+        "key": "fallbackTarget",
+        "label": "兜底节点",
+        "type": "node",
+        "default": "",
+        "help": "未匹配到任何分支时跳转；留空则流程结束"
+      },
+      {
+        "key": "systemPrompt",
+        "label": "路由提示词",
+        "type": "textarea",
+        "rows": 3,
+        "default": "",
+        "help": "留空使用内置提示词；要求只输出 JSON {route, reason, confidence}"
+      },
+      {
+        "type": "outputSchema",
+        "key": "__outputSchema__",
+        "label": "节点输出字段",
+        "hasValueKey": false,
+        "fields": [
+          {
+            "key": "route",
+            "label": "命中分支",
+            "type": "string"
+          },
+          {
+            "key": "target",
+            "label": "目标节点",
+            "type": "string"
+          },
+          {
+            "key": "reason",
+            "label": "路由原因",
+            "type": "string"
+          },
+          {
+            "key": "confidence",
+            "label": "置信度",
+            "type": "number"
+          },
+          {
+            "key": "routes",
+            "label": "可选分支",
+            "type": "array"
+          },
+          {
+            "key": "text",
+            "label": "命中分支",
+            "type": "string"
+          },
+          {
+            "key": "provider",
+            "label": "服务商",
+            "type": "string"
+          },
+          {
+            "key": "model",
+            "label": "模型",
+            "type": "string"
+          },
+          {
+            "key": "mock",
+            "label": "是否模拟",
+            "type": "boolean"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "multi_query_retrieve",
+    "name": "多路召回",
+    "category": "RAG",
+    "icon": "Search",
+    "color": "#0284c7",
+    "description": "查询扩展 + 多路检索 + RRF 融合，提升召回覆盖",
+    "sort": 52,
+    "configSchema": [
+      {
+        "key": "provider",
+        "label": "模型厂商",
+        "type": "select",
+        "options": [
+          {
+            "label": "OpenAI",
+            "value": "openai"
+          },
+          {
+            "label": "DeepSeek",
+            "value": "deepseek"
+          },
+          {
+            "label": "通义千问",
+            "value": "qwen"
+          },
+          {
+            "label": "智谱 GLM",
+            "value": "zhipu"
+          },
+          {
+            "label": "AiPing",
+            "value": "aiping"
+          },
+          {
+            "label": "阶跃星辰 StepFun",
+            "value": "step"
+          },
+          {
+            "label": "APIFree / SkyClaw",
+            "value": "apifree"
+          },
+          {
+            "label": "火山方舟 Agent Plan",
+            "value": "volcengine"
+          },
+          {
+            "label": "Mock（本地演示）",
+            "value": "mock"
+          }
+        ],
+        "default": "openai"
+      },
+      {
+        "key": "model",
+        "label": "模型",
+        "type": "input",
+        "default": "gpt-4o-mini"
+      },
+      {
+        "key": "knowledgeBaseId",
+        "label": "知识库",
+        "type": "knowledge",
+        "default": ""
+      },
+      {
+        "key": "query",
+        "label": "用户问题",
+        "type": "textarea",
+        "rows": 3,
+        "default": "{{input}}"
+      },
+      {
+        "key": "numQueries",
+        "label": "扩展查询数",
+        "type": "number",
+        "min": 1,
+        "max": 5,
+        "step": 1,
+        "default": 3
+      },
+      {
+        "key": "topK",
+        "label": "每路片段数",
+        "type": "number",
+        "min": 1,
+        "max": 10,
+        "step": 1,
+        "default": 4
+      },
+      {
+        "key": "finalTopK",
+        "label": "融合后保留",
+        "type": "number",
+        "min": 1,
+        "max": 10,
+        "step": 1,
+        "default": 5
+      },
+      {
+        "key": "systemPrompt",
+        "label": "扩展提示词",
+        "type": "textarea",
+        "rows": 3,
+        "default": "",
+        "help": "留空使用内置提示词；要求只输出 JSON 字符串数组"
+      },
+      {
+        "type": "outputSchema",
+        "key": "__outputSchema__",
+        "label": "节点输出字段",
+        "hasValueKey": false,
+        "fields": [
+          {
+            "key": "text",
+            "label": "拼接文本",
+            "type": "string"
+          },
+          {
+            "key": "chunks",
+            "label": "融合片段",
+            "type": "array"
+          },
+          {
+            "key": "queries",
+            "label": "扩展查询",
+            "type": "array"
+          },
+          {
+            "key": "count",
+            "label": "片段数",
+            "type": "number"
+          },
+          {
+            "key": "knowledgeBaseId",
+            "label": "知识库 ID",
+            "type": "string"
+          },
+          {
+            "key": "provider",
+            "label": "服务商",
+            "type": "string"
+          },
+          {
+            "key": "model",
+            "label": "模型",
+            "type": "string"
+          },
+          {
+            "key": "usage",
+            "label": "用量",
+            "type": "object"
+          },
+          {
+            "key": "mock",
+            "label": "是否模拟",
+            "type": "boolean"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "hyde_retrieve",
+    "name": "HyDE 召回",
+    "category": "RAG",
+    "icon": "MagicStick",
+    "color": "#0284c7",
+    "description": "生成假设性资料段落，与原问题一起做双路召回",
+    "sort": 53,
+    "configSchema": [
+      {
+        "key": "provider",
+        "label": "模型厂商",
+        "type": "select",
+        "options": [
+          {
+            "label": "OpenAI",
+            "value": "openai"
+          },
+          {
+            "label": "DeepSeek",
+            "value": "deepseek"
+          },
+          {
+            "label": "通义千问",
+            "value": "qwen"
+          },
+          {
+            "label": "智谱 GLM",
+            "value": "zhipu"
+          },
+          {
+            "label": "AiPing",
+            "value": "aiping"
+          },
+          {
+            "label": "阶跃星辰 StepFun",
+            "value": "step"
+          },
+          {
+            "label": "APIFree / SkyClaw",
+            "value": "apifree"
+          },
+          {
+            "label": "火山方舟 Agent Plan",
+            "value": "volcengine"
+          },
+          {
+            "label": "Mock（本地演示）",
+            "value": "mock"
+          }
+        ],
+        "default": "openai"
+      },
+      {
+        "key": "model",
+        "label": "模型",
+        "type": "input",
+        "default": "gpt-4o-mini"
+      },
+      {
+        "key": "knowledgeBaseId",
+        "label": "知识库",
+        "type": "knowledge",
+        "default": ""
+      },
+      {
+        "key": "query",
+        "label": "用户问题",
+        "type": "textarea",
+        "rows": 3,
+        "default": "{{input}}"
+      },
+      {
+        "key": "topK",
+        "label": "每路片段数",
+        "type": "number",
+        "min": 1,
+        "max": 10,
+        "step": 1,
+        "default": 4
+      },
+      {
+        "key": "finalTopK",
+        "label": "融合后保留",
+        "type": "number",
+        "min": 1,
+        "max": 10,
+        "step": 1,
+        "default": 5
+      },
+      {
+        "key": "systemPrompt",
+        "label": "假设段落提示词",
+        "type": "textarea",
+        "rows": 3,
+        "default": "",
+        "help": "留空使用内置提示词"
+      },
+      {
+        "type": "outputSchema",
+        "key": "__outputSchema__",
+        "label": "节点输出字段",
+        "hasValueKey": false,
+        "fields": [
+          {
+            "key": "text",
+            "label": "拼接文本",
+            "type": "string"
+          },
+          {
+            "key": "chunks",
+            "label": "召回片段",
+            "type": "array"
+          },
+          {
+            "key": "queries",
+            "label": "检索语句",
+            "type": "array"
+          },
+          {
+            "key": "hypothetical",
+            "label": "假设段落",
+            "type": "string"
+          },
+          {
+            "key": "count",
+            "label": "片段数",
+            "type": "number"
+          },
+          {
+            "key": "knowledgeBaseId",
+            "label": "知识库 ID",
+            "type": "string"
+          },
+          {
+            "key": "provider",
+            "label": "服务商",
+            "type": "string"
+          },
+          {
+            "key": "model",
+            "label": "模型",
+            "type": "string"
+          },
+          {
+            "key": "usage",
+            "label": "用量",
+            "type": "object"
+          },
+          {
+            "key": "mock",
+            "label": "是否模拟",
+            "type": "boolean"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "rerank",
+    "name": "LLM 重排",
+    "category": "RAG",
+    "icon": "Sort",
+    "color": "#0284c7",
+    "description": "按问题给候选片段打分并保留最相关的几条",
+    "sort": 54,
+    "configSchema": [
+      {
+        "key": "provider",
+        "label": "模型厂商",
+        "type": "select",
+        "options": [
+          {
+            "label": "OpenAI",
+            "value": "openai"
+          },
+          {
+            "label": "DeepSeek",
+            "value": "deepseek"
+          },
+          {
+            "label": "通义千问",
+            "value": "qwen"
+          },
+          {
+            "label": "智谱 GLM",
+            "value": "zhipu"
+          },
+          {
+            "label": "AiPing",
+            "value": "aiping"
+          },
+          {
+            "label": "阶跃星辰 StepFun",
+            "value": "step"
+          },
+          {
+            "label": "APIFree / SkyClaw",
+            "value": "apifree"
+          },
+          {
+            "label": "火山方舟 Agent Plan",
+            "value": "volcengine"
+          },
+          {
+            "label": "Mock（本地演示）",
+            "value": "mock"
+          }
+        ],
+        "default": "openai"
+      },
+      {
+        "key": "model",
+        "label": "模型",
+        "type": "input",
+        "default": "gpt-4o-mini"
+      },
+      {
+        "key": "query",
+        "label": "用户问题",
+        "type": "textarea",
+        "rows": 3,
+        "default": "{{input}}"
+      },
+      {
+        "key": "source",
+        "label": "候选片段",
+        "type": "textarea",
+        "rows": 3,
+        "default": "",
+        "help": "留空自动取直接上游输出的 chunks；也可写 {{节点ID.chunks}}"
+      },
+      {
+        "key": "topK",
+        "label": "保留片段数",
+        "type": "number",
+        "min": 1,
+        "max": 10,
+        "step": 1,
+        "default": 5
+      },
+      {
+        "key": "systemPrompt",
+        "label": "重排提示词",
+        "type": "textarea",
+        "rows": 3,
+        "default": "",
+        "help": "留空使用内置提示词；要求只输出 JSON [{index, score, reason}]"
+      },
+      {
+        "type": "outputSchema",
+        "key": "__outputSchema__",
+        "label": "节点输出字段",
+        "hasValueKey": false,
+        "fields": [
+          {
+            "key": "text",
+            "label": "拼接文本",
+            "type": "string"
+          },
+          {
+            "key": "chunks",
+            "label": "重排片段",
+            "type": "array"
+          },
+          {
+            "key": "count",
+            "label": "保留数",
+            "type": "number"
+          },
+          {
+            "key": "inputCount",
+            "label": "输入数",
+            "type": "number"
+          },
+          {
+            "key": "provider",
+            "label": "服务商",
+            "type": "string"
+          },
+          {
+            "key": "model",
+            "label": "模型",
+            "type": "string"
+          },
+          {
+            "key": "usage",
+            "label": "用量",
+            "type": "object"
+          },
+          {
+            "key": "mock",
+            "label": "是否模拟",
+            "type": "boolean"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "rag_answer",
+    "name": "引用问答",
+    "category": "RAG",
+    "icon": "ChatLineSquare",
+    "color": "#0284c7",
+    "description": "只依据检索片段回答，并标注 [n] 来源编号",
+    "sort": 55,
+    "configSchema": [
+      {
+        "key": "provider",
+        "label": "模型厂商",
+        "type": "select",
+        "options": [
+          {
+            "label": "OpenAI",
+            "value": "openai"
+          },
+          {
+            "label": "DeepSeek",
+            "value": "deepseek"
+          },
+          {
+            "label": "通义千问",
+            "value": "qwen"
+          },
+          {
+            "label": "智谱 GLM",
+            "value": "zhipu"
+          },
+          {
+            "label": "AiPing",
+            "value": "aiping"
+          },
+          {
+            "label": "阶跃星辰 StepFun",
+            "value": "step"
+          },
+          {
+            "label": "APIFree / SkyClaw",
+            "value": "apifree"
+          },
+          {
+            "label": "火山方舟 Agent Plan",
+            "value": "volcengine"
+          },
+          {
+            "label": "Mock（本地演示）",
+            "value": "mock"
+          }
+        ],
+        "default": "openai"
+      },
+      {
+        "key": "model",
+        "label": "模型",
+        "type": "input",
+        "default": "gpt-4o-mini"
+      },
+      {
+        "key": "knowledgeBaseId",
+        "label": "知识库（可选）",
+        "type": "knowledge",
+        "default": "",
+        "help": "留空则使用上游节点输出的 chunks"
+      },
+      {
+        "key": "query",
+        "label": "用户问题",
+        "type": "textarea",
+        "rows": 3,
+        "default": "{{input}}"
+      },
+      {
+        "key": "source",
+        "label": "上游片段",
+        "type": "textarea",
+        "rows": 3,
+        "default": "",
+        "help": "未选知识库时使用；留空自动取直接上游输出的 chunks"
+      },
+      {
+        "key": "topK",
+        "label": "检索片段数",
+        "type": "number",
+        "min": 1,
+        "max": 10,
+        "step": 1,
+        "default": 4
+      },
+      {
+        "key": "requireCitations",
+        "label": "要求引用",
+        "type": "switch",
+        "default": true,
+        "help": "回答缺少 [n] 引用时只告警，不失败"
+      },
+      {
+        "key": "systemPrompt",
+        "label": "问答提示词",
+        "type": "textarea",
+        "rows": 3,
+        "default": "",
+        "help": "留空使用内置提示词，强调不得编造"
+      },
+      {
+        "type": "outputSchema",
+        "key": "__outputSchema__",
+        "label": "节点输出字段",
+        "hasValueKey": false,
+        "fields": [
+          {
+            "key": "text",
+            "label": "回答",
+            "type": "string"
+          },
+          {
+            "key": "citations",
+            "label": "引用来源",
+            "type": "array"
+          },
+          {
+            "key": "chunks",
+            "label": "检索片段",
+            "type": "array"
+          },
+          {
+            "key": "count",
+            "label": "片段数",
+            "type": "number"
+          },
+          {
+            "key": "cited",
+            "label": "是否带引用",
+            "type": "boolean"
+          },
+          {
+            "key": "provider",
+            "label": "服务商",
+            "type": "string"
+          },
+          {
+            "key": "model",
+            "label": "模型",
+            "type": "string"
+          },
+          {
+            "key": "usage",
+            "label": "用量",
+            "type": "object"
+          },
+          {
+            "key": "mock",
+            "label": "是否模拟",
+            "type": "boolean"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "knowledge_upsert",
+    "name": "知识写入",
+    "category": "RAG",
+    "icon": "DocumentAdd",
+    "color": "#0ea5e9",
+    "description": "把运行期内容写入知识库并立即建索引，同标题覆盖",
+    "sort": 51,
+    "configSchema": [
+      {
+        "key": "knowledgeBaseId",
+        "label": "目标知识库",
+        "type": "knowledge",
+        "default": ""
+      },
+      {
+        "key": "title",
+        "label": "文档标题",
+        "type": "input",
+        "default": "",
+        "help": "留空生成 runtime-时间戳；相同标题再次写入会覆盖旧内容，便于增量更新"
+      },
+      {
+        "key": "content",
+        "label": "写入内容",
+        "type": "textarea",
+        "rows": 6,
+        "default": "{{input}}"
+      },
+      {
+        "type": "outputSchema",
+        "key": "__outputSchema__",
+        "label": "节点输出字段",
+        "hasValueKey": false,
+        "fields": [
+          {
+            "key": "documentId",
+            "label": "文档 ID",
+            "type": "number"
+          },
+          {
+            "key": "title",
+            "label": "文档标题",
+            "type": "string"
+          },
+          {
+            "key": "status",
+            "label": "索引状态",
+            "type": "string"
+          },
+          {
+            "key": "chunkCount",
+            "label": "分片数",
+            "type": "number"
+          },
+          {
+            "key": "knowledgeBaseId",
+            "label": "知识库 ID",
+            "type": "string"
+          },
+          {
+            "key": "text",
+            "label": "写入内容",
+            "type": "string"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "memory_write",
+    "name": "写入记忆",
+    "category": "记忆",
+    "icon": "Notebook",
+    "color": "#0d9488",
+    "description": "把事实、偏好或结论写入长期记忆，供后续执行召回",
+    "sort": 24,
+    "configSchema": [
+      {
+        "key": "scope",
+        "label": "记忆范围",
+        "type": "select",
+        "default": "workflow",
+        "options": [
+          {
+            "label": "当前工作流",
+            "value": "workflow"
+          },
+          {
+            "label": "当前用户",
+            "value": "user"
+          },
+          {
+            "label": "全局共享",
+            "value": "global"
+          }
+        ],
+        "help": "工作流范围只在本流程召回；用户范围跟随账号；全局范围所有人可见"
+      },
+      {
+        "key": "memoryType",
+        "label": "记忆类型",
+        "type": "select",
+        "default": "fact",
+        "options": [
+          {
+            "label": "事实",
+            "value": "fact"
+          },
+          {
+            "label": "偏好",
+            "value": "preference"
+          },
+          {
+            "label": "决策",
+            "value": "decision"
+          },
+          {
+            "label": "摘要",
+            "value": "summary"
+          },
+          {
+            "label": "其他",
+            "value": "other"
+          }
+        ]
+      },
+      {
+        "key": "content",
+        "label": "记忆内容",
+        "type": "textarea",
+        "rows": 4,
+        "default": "{{input}}"
+      },
+      {
+        "key": "tags",
+        "label": "标签",
+        "type": "tags",
+        "default": [],
+        "help": "召回时可按标签过滤，最多 10 个"
+      },
+      {
+        "key": "provider",
+        "label": "向量服务商",
+        "type": "select",
+        "options": [
+          {
+            "label": "OpenAI",
+            "value": "openai"
+          },
+          {
+            "label": "DeepSeek",
+            "value": "deepseek"
+          },
+          {
+            "label": "通义千问",
+            "value": "qwen"
+          },
+          {
+            "label": "智谱 GLM",
+            "value": "zhipu"
+          },
+          {
+            "label": "AiPing",
+            "value": "aiping"
+          },
+          {
+            "label": "阶跃星辰 StepFun",
+            "value": "step"
+          },
+          {
+            "label": "APIFree / SkyClaw",
+            "value": "apifree"
+          },
+          {
+            "label": "火山方舟 Agent Plan",
+            "value": "volcengine"
+          },
+          {
+            "label": "Mock（本地演示）",
+            "value": "mock"
+          }
+        ],
+        "default": "mock",
+        "help": "Mock 或未配置 Key 时退化为词法匹配"
+      },
+      {
+        "key": "model",
+        "label": "向量模型",
+        "type": "input",
+        "default": "text-embedding-3-small"
+      },
+      {
+        "type": "outputSchema",
+        "key": "__outputSchema__",
+        "label": "节点输出字段",
+        "hasValueKey": false,
+        "fields": [
+          {
+            "key": "memoryId",
+            "label": "记忆 ID",
+            "type": "string"
+          },
+          {
+            "key": "scope",
+            "label": "记忆范围",
+            "type": "string"
+          },
+          {
+            "key": "memoryType",
+            "label": "记忆类型",
+            "type": "string"
+          },
+          {
+            "key": "stored",
+            "label": "是否写入",
+            "type": "boolean"
+          },
+          {
+            "key": "text",
+            "label": "记忆内容",
+            "type": "string"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "memory_retrieve",
+    "name": "召回记忆",
+    "category": "记忆",
+    "icon": "CollectionTag",
+    "color": "#0d9488",
+    "description": "按语义相似度召回长期记忆，输出可拼进提示词的上下文",
+    "sort": 23,
+    "configSchema": [
+      {
+        "key": "scope",
+        "label": "记忆范围",
+        "type": "select",
+        "default": "workflow",
+        "options": [
+          {
+            "label": "当前工作流",
+            "value": "workflow"
+          },
+          {
+            "label": "当前用户",
+            "value": "user"
+          },
+          {
+            "label": "全局共享",
+            "value": "global"
+          }
+        ]
+      },
+      {
+        "key": "query",
+        "label": "检索语句",
+        "type": "textarea",
+        "rows": 3,
+        "default": "{{input}}"
+      },
+      {
+        "key": "topK",
+        "label": "返回条数",
+        "type": "number",
+        "min": 1,
+        "max": 20,
+        "step": 1,
+        "default": 5
+      },
+      {
+        "key": "tags",
+        "label": "标签过滤",
+        "type": "tags",
+        "default": [],
+        "help": "留空召回全部；填写时只召回包含全部标签的记忆"
+      },
+      {
+        "key": "provider",
+        "label": "向量服务商",
+        "type": "select",
+        "options": [
+          {
+            "label": "OpenAI",
+            "value": "openai"
+          },
+          {
+            "label": "DeepSeek",
+            "value": "deepseek"
+          },
+          {
+            "label": "通义千问",
+            "value": "qwen"
+          },
+          {
+            "label": "智谱 GLM",
+            "value": "zhipu"
+          },
+          {
+            "label": "AiPing",
+            "value": "aiping"
+          },
+          {
+            "label": "阶跃星辰 StepFun",
+            "value": "step"
+          },
+          {
+            "label": "APIFree / SkyClaw",
+            "value": "apifree"
+          },
+          {
+            "label": "火山方舟 Agent Plan",
+            "value": "volcengine"
+          },
+          {
+            "label": "Mock（本地演示）",
+            "value": "mock"
+          }
+        ],
+        "default": "mock",
+        "help": "与写入时保持一致召回更准；Mock 时使用词法匹配"
+      },
+      {
+        "key": "model",
+        "label": "向量模型",
+        "type": "input",
+        "default": "text-embedding-3-small"
+      },
+      {
+        "type": "outputSchema",
+        "key": "__outputSchema__",
+        "label": "节点输出字段",
+        "hasValueKey": false,
+        "fields": [
+          {
+            "key": "memories",
+            "label": "记忆列表",
+            "type": "array"
+          },
+          {
+            "key": "context",
+            "label": "拼接上下文",
+            "type": "string"
+          },
+          {
+            "key": "text",
+            "label": "拼接上下文",
+            "type": "string"
+          },
+          {
+            "key": "citations",
+            "label": "记忆 ID",
+            "type": "array"
+          },
+          {
+            "key": "count",
+            "label": "记忆数",
+            "type": "number"
+          },
+          {
+            "key": "query",
+            "label": "检索语句",
+            "type": "string"
+          },
+          {
+            "key": "scope",
+            "label": "记忆范围",
+            "type": "string"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "web_search",
+    "name": "联网搜索",
+    "category": "工具",
+    "icon": "Search",
+    "color": "#0891b2",
+    "description": "Tavily 直连或 MCP 搜索工具，返回摘要与结果列表",
+    "sort": 65,
+    "configSchema": [
+      {
+        "key": "provider",
+        "label": "搜索方式",
+        "type": "select",
+        "default": "tavily",
+        "options": [
+          {
+            "label": "Tavily（需在模型配置填写 Key）",
+            "value": "tavily"
+          },
+          {
+            "label": "MCP 搜索工具",
+            "value": "mcp"
+          }
+        ]
+      },
+      {
+        "key": "query",
+        "label": "检索语句",
+        "type": "textarea",
+        "rows": 3,
+        "default": "{{input}}",
+        "visibleWhen": {
+          "provider": [
+            "tavily"
+          ]
+        }
+      },
+      {
+        "key": "limit",
+        "label": "结果条数",
+        "type": "number",
+        "min": 1,
+        "max": 10,
+        "step": 1,
+        "default": 5,
+        "visibleWhen": {
+          "provider": [
+            "tavily"
+          ]
+        }
+      },
+      {
+        "key": "freshness",
+        "label": "时间范围",
+        "type": "select",
+        "default": "",
+        "options": [
+          {
+            "label": "不限",
+            "value": ""
+          },
+          {
+            "label": "近一天",
+            "value": "day"
+          },
+          {
+            "label": "近一周",
+            "value": "week"
+          },
+          {
+            "label": "近一月",
+            "value": "month"
+          },
+          {
+            "label": "近一年",
+            "value": "year"
+          }
+        ],
+        "visibleWhen": {
+          "provider": [
+            "tavily"
+          ]
+        }
+      },
+      {
+        "key": "includeAnswer",
+        "label": "生成摘要",
+        "type": "switch",
+        "default": true,
+        "visibleWhen": {
+          "provider": [
+            "tavily"
+          ]
+        }
+      },
+      {
+        "key": "serverId",
+        "label": "MCP 服务",
+        "type": "mcpServer",
+        "default": "",
+        "visibleWhen": {
+          "provider": [
+            "mcp"
+          ]
+        }
+      },
+      {
+        "key": "toolName",
+        "label": "搜索工具",
+        "type": "mcpTool",
+        "default": "",
+        "visibleWhen": {
+          "provider": [
+            "mcp"
+          ]
+        }
+      },
+      {
+        "key": "arguments",
+        "label": "工具参数（JSON）",
+        "type": "textarea",
+        "rows": 5,
+        "default": "{\"query\":\"{{input}}\",\"max_results\":5}",
+        "help": "按工具实际参数填写；模板保留数字 / 数组类型",
+        "visibleWhen": {
+          "provider": [
+            "mcp"
+          ]
+        }
+      },
+      {
+        "type": "outputSchema",
+        "key": "__outputSchema__",
+        "label": "节点输出字段",
+        "hasValueKey": false,
+        "fields": [
+          {
+            "key": "query",
+            "label": "检索语句",
+            "type": "string"
+          },
+          {
+            "key": "summary",
+            "label": "搜索摘要",
+            "type": "string"
+          },
+          {
+            "key": "results",
+            "label": "搜索结果",
+            "type": "array"
+          },
+          {
+            "key": "citations",
+            "label": "来源链接",
+            "type": "array"
+          },
+          {
+            "key": "count",
+            "label": "结果数",
+            "type": "number"
+          },
+          {
+            "key": "text",
+            "label": "文本结果",
+            "type": "string"
+          },
+          {
+            "key": "provider",
+            "label": "搜索方式",
+            "type": "string"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "web_fetch",
+    "name": "网页读取",
+    "category": "工具",
+    "icon": "Link",
+    "color": "#0891b2",
+    "description": "抓取公网网页并转纯文本，自动拦截内网地址",
+    "sort": 64,
+    "configSchema": [
+      {
+        "key": "urls",
+        "label": "网页地址",
+        "type": "textarea",
+        "rows": 3,
+        "default": "{{input.url}}",
+        "help": "多个地址用换行或逗号分隔，单次最多 5 个；仅支持公网 http/https"
+      },
+      {
+        "key": "maxChars",
+        "label": "单页字符上限",
+        "type": "number",
+        "min": 200,
+        "max": 50000,
+        "step": 100,
+        "default": 8000
+      },
+      {
+        "key": "timeoutMs",
+        "label": "超时（毫秒）",
+        "type": "number",
+        "min": 1000,
+        "max": 60000,
+        "step": 1000,
+        "default": 15000
+      },
+      {
+        "type": "outputSchema",
+        "key": "__outputSchema__",
+        "label": "节点输出字段",
+        "hasValueKey": false,
+        "fields": [
+          {
+            "key": "pages",
+            "label": "页面列表",
+            "type": "array"
+          },
+          {
+            "key": "content",
+            "label": "正文",
+            "type": "string"
+          },
+          {
+            "key": "text",
+            "label": "正文",
+            "type": "string"
+          },
+          {
+            "key": "citations",
+            "label": "来源链接",
+            "type": "array"
+          },
+          {
+            "key": "count",
+            "label": "页面数",
+            "type": "number"
+          },
+          {
+            "key": "failures",
+            "label": "失败页面",
+            "type": "array"
+          }
+        ]
       }
     ]
   },
@@ -335,6 +3356,29 @@
         "label": "条件为假 → 节点",
         "type": "node",
         "default": ""
+      },
+      {
+        "type": "outputSchema",
+        "key": "__outputSchema__",
+        "label": "节点输出字段",
+        "hasValueKey": false,
+        "fields": [
+          {
+            "key": "result",
+            "label": "条件结果",
+            "type": "boolean"
+          },
+          {
+            "key": "branch",
+            "label": "命中分支",
+            "type": "string"
+          },
+          {
+            "key": "expression",
+            "label": "表达式",
+            "type": "string"
+          }
+        ]
       }
     ]
   },
@@ -354,6 +3398,426 @@
         "rows": 5,
         "default": "{{input}}",
         "help": "支持 {{nodeId.text}}、{{vars.name}}、{{input}}"
+      },
+      {
+        "type": "outputSchema",
+        "key": "__outputSchema__",
+        "label": "节点输出字段",
+        "hasValueKey": false,
+        "fields": [
+          {
+            "key": "text",
+            "label": "模板文本",
+            "type": "string"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "file_read",
+    "name": "文件读取",
+    "category": "文件",
+    "icon": "FolderOpened",
+    "color": "#0d9488",
+    "description": "读取存储目录中的文本文件，供下游提示词或输出引用",
+    "sort": 45,
+    "configSchema": [
+      {
+        "key": "path",
+        "label": "文件路径",
+        "type": "file",
+        "default": "",
+        "placeholder": "例如 reports/today.md，也可写 {{input.fileName}}",
+        "help": "相对存储目录；留空时自动取上游节点的文件输出（/files/...）"
+      },
+      {
+        "key": "encoding",
+        "label": "编码",
+        "type": "select",
+        "default": "utf-8",
+        "options": [
+          {
+            "label": "UTF-8",
+            "value": "utf-8"
+          },
+          {
+            "label": "GBK",
+            "value": "gbk"
+          },
+          {
+            "label": "Latin-1",
+            "value": "latin-1"
+          }
+        ]
+      },
+      {
+        "key": "maxChars",
+        "label": "最多读取字符",
+        "type": "number",
+        "min": 0,
+        "max": 5000000,
+        "step": 1000,
+        "default": 200000
+      },
+      {
+        "type": "outputSchema",
+        "key": "__outputSchema__",
+        "label": "节点输出字段",
+        "hasValueKey": false,
+        "fields": [
+          {
+            "key": "path",
+            "label": "文件路径",
+            "type": "string"
+          },
+          {
+            "key": "name",
+            "label": "文件名",
+            "type": "string"
+          },
+          {
+            "key": "url",
+            "label": "访问地址",
+            "type": "string"
+          },
+          {
+            "key": "size",
+            "label": "字节数",
+            "type": "number"
+          },
+          {
+            "key": "text",
+            "label": "文本内容",
+            "type": "string"
+          },
+          {
+            "key": "content",
+            "label": "文本内容",
+            "type": "string"
+          },
+          {
+            "key": "encoding",
+            "label": "编码",
+            "type": "string"
+          },
+          {
+            "key": "charCount",
+            "label": "字符数",
+            "type": "number"
+          },
+          {
+            "key": "truncated",
+            "label": "是否截断",
+            "type": "boolean"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "file_write",
+    "name": "文件写入",
+    "category": "文件",
+    "icon": "DocumentAdd",
+    "color": "#0d9488",
+    "description": "把文本写入存储目录，可用于导出报告、保存中间结果",
+    "sort": 46,
+    "configSchema": [
+      {
+        "key": "path",
+        "label": "文件路径",
+        "type": "file",
+        "default": "output.txt",
+        "placeholder": "例如 reports/{{input.date}}.md",
+        "help": "相对存储目录，允许子目录；不能使用绝对路径或 .."
+      },
+      {
+        "key": "content",
+        "label": "写入内容",
+        "type": "textarea",
+        "rows": 6,
+        "default": "{{input}}",
+        "help": "支持模板变量；留空时取上游最后一个节点的结果"
+      },
+      {
+        "key": "encoding",
+        "label": "编码",
+        "type": "select",
+        "default": "utf-8",
+        "options": [
+          {
+            "label": "UTF-8",
+            "value": "utf-8"
+          },
+          {
+            "label": "GBK",
+            "value": "gbk"
+          },
+          {
+            "label": "Latin-1",
+            "value": "latin-1"
+          }
+        ]
+      },
+      {
+        "key": "append",
+        "label": "追加写入",
+        "type": "switch",
+        "default": false
+      },
+      {
+        "key": "overwrite",
+        "label": "允许覆盖",
+        "type": "switch",
+        "default": true
+      },
+      {
+        "type": "outputSchema",
+        "key": "__outputSchema__",
+        "label": "节点输出字段",
+        "hasValueKey": false,
+        "fields": [
+          {
+            "key": "path",
+            "label": "文件路径",
+            "type": "string"
+          },
+          {
+            "key": "name",
+            "label": "文件名",
+            "type": "string"
+          },
+          {
+            "key": "url",
+            "label": "访问地址",
+            "type": "string"
+          },
+          {
+            "key": "size",
+            "label": "字节数",
+            "type": "number"
+          },
+          {
+            "key": "text",
+            "label": "写入内容",
+            "type": "string"
+          },
+          {
+            "key": "content",
+            "label": "写入内容",
+            "type": "string"
+          },
+          {
+            "key": "charCount",
+            "label": "字符数",
+            "type": "number"
+          },
+          {
+            "key": "appended",
+            "label": "是否追加",
+            "type": "boolean"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "file_list",
+    "name": "文件列表",
+    "category": "文件",
+    "icon": "Files",
+    "color": "#0d9488",
+    "description": "列出存储目录中的文件，可按前缀过滤",
+    "sort": 47,
+    "configSchema": [
+      {
+        "key": "prefix",
+        "label": "路径前缀",
+        "type": "input",
+        "default": "",
+        "placeholder": "例如 reports/，留空列出全部"
+      },
+      {
+        "key": "limit",
+        "label": "最多返回",
+        "type": "number",
+        "min": 1,
+        "max": 5000,
+        "step": 10,
+        "default": 200
+      },
+      {
+        "type": "outputSchema",
+        "key": "__outputSchema__",
+        "label": "节点输出字段",
+        "hasValueKey": true,
+        "fields": [
+          {
+            "key": "files",
+            "label": "文件列表",
+            "type": "array"
+          },
+          {
+            "key": "count",
+            "label": "数量",
+            "type": "number"
+          },
+          {
+            "key": "text",
+            "label": "JSON 文本",
+            "type": "string"
+          },
+          {
+            "key": "value",
+            "label": "JSON 文本",
+            "type": "string"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "file",
+    "name": "文件操作",
+    "category": "文件",
+    "icon": "Folder",
+    "color": "#0d9488",
+    "description": "通用文件节点：按 action 执行读取 / 写入 / 列表",
+    "sort": 48,
+    "configSchema": [
+      {
+        "key": "action",
+        "label": "操作",
+        "type": "select",
+        "default": "read",
+        "options": [
+          {
+            "label": "读取",
+            "value": "read"
+          },
+          {
+            "label": "写入",
+            "value": "write"
+          },
+          {
+            "label": "追加",
+            "value": "append"
+          },
+          {
+            "label": "列表",
+            "value": "list"
+          }
+        ]
+      },
+      {
+        "key": "path",
+        "label": "文件路径",
+        "type": "file",
+        "default": "",
+        "help": "读取 / 写入时的相对路径"
+      },
+      {
+        "key": "content",
+        "label": "写入内容",
+        "type": "textarea",
+        "rows": 5,
+        "default": "{{input}}"
+      },
+      {
+        "key": "encoding",
+        "label": "编码",
+        "type": "select",
+        "default": "utf-8",
+        "options": [
+          {
+            "label": "UTF-8",
+            "value": "utf-8"
+          },
+          {
+            "label": "GBK",
+            "value": "gbk"
+          },
+          {
+            "label": "Latin-1",
+            "value": "latin-1"
+          }
+        ]
+      },
+      {
+        "key": "append",
+        "label": "追加写入",
+        "type": "switch",
+        "default": false
+      },
+      {
+        "key": "overwrite",
+        "label": "允许覆盖",
+        "type": "switch",
+        "default": true
+      },
+      {
+        "key": "prefix",
+        "label": "列表前缀",
+        "type": "input",
+        "default": ""
+      },
+      {
+        "key": "limit",
+        "label": "列表最多返回",
+        "type": "number",
+        "min": 1,
+        "max": 5000,
+        "step": 10,
+        "default": 200
+      },
+      {
+        "type": "outputSchema",
+        "key": "__outputSchema__",
+        "label": "节点输出字段",
+        "hasValueKey": false,
+        "fields": [
+          {
+            "key": "path",
+            "label": "文件路径",
+            "type": "string"
+          },
+          {
+            "key": "url",
+            "label": "访问地址",
+            "type": "string"
+          },
+          {
+            "key": "size",
+            "label": "字节数",
+            "type": "number"
+          },
+          {
+            "key": "text",
+            "label": "文本内容",
+            "type": "string"
+          },
+          {
+            "key": "content",
+            "label": "文本内容",
+            "type": "string"
+          },
+          {
+            "key": "files",
+            "label": "文件列表",
+            "type": "array"
+          },
+          {
+            "key": "count",
+            "label": "数量",
+            "type": "number"
+          },
+          {
+            "key": "charCount",
+            "label": "字符数",
+            "type": "number"
+          }
+        ]
       }
     ]
   },
@@ -414,6 +3878,29 @@
         "label": "超时(ms)",
         "type": "number",
         "default": 30000
+      },
+      {
+        "type": "outputSchema",
+        "key": "__outputSchema__",
+        "label": "节点输出字段",
+        "hasValueKey": false,
+        "fields": [
+          {
+            "key": "status",
+            "label": "状态码",
+            "type": "number"
+          },
+          {
+            "key": "body",
+            "label": "响应体",
+            "type": "any"
+          },
+          {
+            "key": "headers",
+            "label": "响应头",
+            "type": "object"
+          }
+        ]
       }
     ]
   },
@@ -470,6 +3957,44 @@
           }
         ],
         "default": "mp3"
+      },
+      {
+        "type": "outputSchema",
+        "key": "__outputSchema__",
+        "label": "节点输出字段",
+        "hasValueKey": false,
+        "fields": [
+          {
+            "key": "audioUrl",
+            "label": "音频地址",
+            "type": "string"
+          },
+          {
+            "key": "durationMs",
+            "label": "时长毫秒",
+            "type": "number"
+          },
+          {
+            "key": "format",
+            "label": "格式",
+            "type": "string"
+          },
+          {
+            "key": "text",
+            "label": "合成文本",
+            "type": "string"
+          },
+          {
+            "key": "mock",
+            "label": "是否模拟",
+            "type": "boolean"
+          },
+          {
+            "key": "createdAt",
+            "label": "创建时间",
+            "type": "number"
+          }
+        ]
       }
     ]
   },
@@ -483,19 +4008,536 @@
     "sort": 70,
     "configSchema": [
       {
+        "key": "mode",
+        "label": "输出方式",
+        "type": "select",
+        "default": "",
+        "options": [
+          {
+            "label": "自动（按模板 / 变量推断）",
+            "value": ""
+          },
+          {
+            "label": "上游最后一个节点的结果",
+            "value": "last"
+          },
+          {
+            "label": "文本模板",
+            "value": "template"
+          },
+          {
+            "label": "引用变量",
+            "value": "key"
+          },
+          {
+            "label": "结构化 JSON",
+            "value": "json"
+          }
+        ],
+        "help": "留空时沿用旧规则：填了模板用模板，否则取上游最后一个节点的结果"
+      },
+      {
         "key": "template",
-        "label": "输出模板",
+        "label": "输出模板 / JSON",
         "type": "textarea",
         "rows": 4,
         "default": "",
-        "help": "留空则取上游最后一个节点的结果"
+        "help": "支持 {{nodeId.text}}、{{outputs[\"节点ID\"].text}}；输出方式为「结构化 JSON」时填写 JSON"
+      },
+      {
+        "key": "key",
+        "label": "引用变量",
+        "type": "input",
+        "default": "",
+        "placeholder": "例如 outputs.llm1.text",
+        "help": "输出方式为「引用变量」时生效，支持点路径表达式"
       },
       {
         "key": "outputKey",
         "label": "输出字段名",
         "type": "input",
-        "default": "result"
+        "default": "result",
+        "help": "最终输出会以该名字额外挂一个字段，便于下游引用"
+      },
+      {
+        "type": "outputSchema",
+        "key": "__outputSchema__",
+        "label": "节点输出字段",
+        "hasValueKey": true,
+        "fields": [
+          {
+            "key": "value",
+            "label": "最终值",
+            "type": "any"
+          },
+          {
+            "key": "text",
+            "label": "文本",
+            "type": "string"
+          },
+          {
+            "key": "outputKey",
+            "label": "输出字段名",
+            "type": "string"
+          }
+        ]
       }
+    ]
+  },
+  {
+    "type": "merge",
+    "name": "合并",
+    "category": "逻辑",
+    "icon": "Share",
+    "color": "#14b8a6",
+    "description": "等待多个上游完成后合并输出，作为并行分支的汇合点",
+    "sort": 35,
+    "configSchema": [
+      {
+        "key": "sources",
+        "label": "上游节点",
+        "type": "nodes",
+        "default": [],
+        "help": "留空自动取所有直接上游；选择多个节点按顺序合并"
+      },
+      {
+        "key": "mode",
+        "label": "合并方式",
+        "type": "select",
+        "default": "object",
+        "options": [
+          {
+            "label": "对象（节点 id -> 值）",
+            "value": "object"
+          },
+          {
+            "label": "数组",
+            "value": "array"
+          },
+          {
+            "label": "文本拼接",
+            "value": "text"
+          },
+          {
+            "label": "取第一个非空",
+            "value": "first"
+          }
+        ]
+      },
+      {
+        "key": "joinWith",
+        "label": "文本分隔符",
+        "type": "input",
+        "default": "\n"
+      },
+      {
+        "type": "outputSchema",
+        "key": "__outputSchema__",
+        "label": "节点输出字段",
+        "hasValueKey": true,
+        "fields": [
+          {
+            "key": "value",
+            "label": "合并值",
+            "type": "any"
+          },
+          {
+            "key": "text",
+            "label": "文本",
+            "type": "string"
+          },
+          {
+            "key": "count",
+            "label": "来源数",
+            "type": "number"
+          },
+          {
+            "key": "sources",
+            "label": "来源节点",
+            "type": "array"
+          },
+          {
+            "key": "outputs",
+            "label": "各来源输出",
+            "type": "object"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "delay",
+    "name": "延迟",
+    "category": "基础",
+    "icon": "Timer",
+    "color": "#64748b",
+    "description": "等待指定时间后继续，可用于限速或轮询间隔",
+    "sort": 42,
+    "configSchema": [
+      {
+        "key": "durationMs",
+        "label": "延迟毫秒",
+        "type": "number",
+        "min": 0,
+        "max": 600000,
+        "step": 100,
+        "default": 1000
+      },
+      {
+        "type": "outputSchema",
+        "key": "__outputSchema__",
+        "label": "节点输出字段",
+        "hasValueKey": true,
+        "fields": [
+          {
+            "key": "durationMs",
+            "label": "延迟毫秒",
+            "type": "number"
+          },
+          {
+            "key": "elapsedMs",
+            "label": "实际耗时",
+            "type": "number"
+          },
+          {
+            "key": "value",
+            "label": "耗时值",
+            "type": "number"
+          },
+          {
+            "key": "text",
+            "label": "文本",
+            "type": "string"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "subflow",
+    "name": "子工作流",
+    "category": "编排",
+    "icon": "Connection",
+    "color": "#2563eb",
+    "description": "调用另一条已保存的工作流，并把结果作为当前节点输出",
+    "sort": 62,
+    "configSchema": [
+      {
+        "key": "workflowId",
+        "label": "目标工作流",
+        "type": "workflow",
+        "default": "",
+        "help": "只能选择当前账号可见的工作流"
+      },
+      {
+        "key": "input",
+        "label": "输入映射（JSON）",
+        "type": "textarea",
+        "rows": 5,
+        "default": "{}",
+        "help": "支持模板，如 {\"topic\": \"{{input.topic}}\"}；留空则透传当前 input"
+      },
+      {
+        "key": "childTimeoutMs",
+        "label": "子流程超时（毫秒）",
+        "type": "number",
+        "min": 0,
+        "max": 3600000,
+        "step": 1000,
+        "default": 0
+      },
+      {
+        "type": "outputSchema",
+        "key": "__outputSchema__",
+        "label": "节点输出字段",
+        "hasValueKey": true,
+        "fields": [
+          {
+            "key": "value",
+            "label": "子流程输出",
+            "type": "any"
+          },
+          {
+            "key": "output",
+            "label": "子流程输出",
+            "type": "any"
+          },
+          {
+            "key": "text",
+            "label": "文本",
+            "type": "string"
+          },
+          {
+            "key": "outputs",
+            "label": "子流程各节点输出",
+            "type": "object"
+          },
+          {
+            "key": "nodeCount",
+            "label": "节点数",
+            "type": "number"
+          },
+          {
+            "key": "subflowId",
+            "label": "子工作流 ID",
+            "type": "string"
+          },
+          {
+            "key": "elapsedMs",
+            "label": "耗时",
+            "type": "number"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "foreach",
+    "name": "循环遍历",
+    "category": "编排",
+    "icon": "Refresh",
+    "color": "#2563eb",
+    "description": "对数组逐项执行同一条子工作流，汇总结果",
+    "sort": 63,
+    "configSchema": [
+      {
+        "key": "items",
+        "label": "数组来源",
+        "type": "textarea",
+        "rows": 3,
+        "default": "{{input.items}}",
+        "help": "模板表达式或 JSON 数组，例如 {{input.topics}}"
+      },
+      {
+        "key": "bodyWorkflowId",
+        "label": "循环体工作流",
+        "type": "workflow",
+        "default": ""
+      },
+      {
+        "key": "input",
+        "label": "单项输入映射（JSON）",
+        "type": "textarea",
+        "rows": 4,
+        "default": "{\"item\": \"{{item}}\", \"index\": \"{{index}}\", \"total\": \"{{total}}\"}",
+        "help": "可用 item / index / total 及父级变量"
+      },
+      {
+        "key": "concurrency",
+        "label": "并发数",
+        "type": "number",
+        "min": 1,
+        "max": 5,
+        "step": 1,
+        "default": 1
+      },
+      {
+        "key": "itemKey",
+        "label": "单项变量名",
+        "type": "input",
+        "default": "item"
+      },
+      {
+        "key": "itemTimeoutMs",
+        "label": "单项超时（毫秒）",
+        "type": "number",
+        "min": 0,
+        "max": 3600000,
+        "step": 1000,
+        "default": 0
+      },
+      {
+        "type": "outputSchema",
+        "key": "__outputSchema__",
+        "label": "节点输出字段",
+        "hasValueKey": true,
+        "fields": [
+          {
+            "key": "results",
+            "label": "逐项结果",
+            "type": "array"
+          },
+          {
+            "key": "count",
+            "label": "总数",
+            "type": "number"
+          },
+          {
+            "key": "successCount",
+            "label": "成功数",
+            "type": "number"
+          },
+          {
+            "key": "failedCount",
+            "label": "失败数",
+            "type": "number"
+          },
+          {
+            "key": "subflowId",
+            "label": "循环体工作流",
+            "type": "string"
+          },
+          {
+            "key": "text",
+            "label": "文本",
+            "type": "string"
+          },
+          {
+            "key": "value",
+            "label": "结果数组",
+            "type": "array"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "json_parse",
+    "name": "JSON 解析",
+    "category": "数据",
+    "icon": "DocumentChecked",
+    "color": "#0891b2",
+    "description": "解析 JSON / 模型代码块，按路径提取结构化数据",
+    "sort": 80,
+    "configSchema": [
+      {"key": "source", "label": "数据源", "type": "textarea", "rows": 3, "default": "", "help": "留空取直接上游的值；可写 {{input.items}} 或 {{outputs[\"节点ID\"].text}}"},
+      {"key": "path", "label": "提取路径", "type": "input", "default": "", "help": "留空返回全部；支持 items.0.name 或 /items/0/name（JSON Pointer）"},
+      {"key": "stripCodeFence", "label": "去掉 Markdown 代码块", "type": "switch", "default": true},
+      {"type": "outputSchema", "key": "__outputSchema__", "label": "节点输出字段", "hasValueKey": true, "fields": [{"key": "data", "label": "解析数据", "type": "any"}, {"key": "value", "label": "解析数据", "type": "any"}, {"key": "text", "label": "JSON 文本", "type": "string"}, {"key": "type", "label": "数据类型", "type": "string"}]}
+    ]
+  },
+  {
+    "type": "data_map",
+    "name": "字段映射",
+    "category": "数据",
+    "icon": "SetUp",
+    "color": "#0891b2",
+    "description": "重命名 / 组装字段，保留数字、布尔和数组类型",
+    "sort": 81,
+    "configSchema": [
+      {"key": "source", "label": "数据源", "type": "textarea", "rows": 3, "default": "", "help": "留空取直接上游的值；可写 {{input.items}} 或 {{outputs[\"节点ID\"].text}}"},
+      {"key": "mapping", "label": "映射对象（JSON）", "type": "textarea", "rows": 6, "default": "{}", "help": "例如 {\"title\":\"{{source.name}}\", \"count\":\"{{len(source.items)}}\"}；也可引用 input / outputs"},
+      {"key": "mergeSource", "label": "保留原对象字段", "type": "switch", "default": false},
+      {"key": "dropNull", "label": "删除值为 null 的顶层字段", "type": "switch", "default": false},
+      {"type": "outputSchema", "key": "__outputSchema__", "label": "节点输出字段", "hasValueKey": true, "fields": [{"key": "data", "label": "映射对象", "type": "object"}, {"key": "value", "label": "映射对象", "type": "object"}, {"key": "text", "label": "JSON 文本", "type": "string"}, {"key": "keys", "label": "字段名", "type": "array"}]}
+    ]
+  },
+  {
+    "type": "list_process",
+    "name": "列表处理",
+    "category": "数据",
+    "icon": "List",
+    "color": "#0891b2",
+    "description": "数组筛选、排序、去重、字段提取、截取和展开",
+    "sort": 82,
+    "configSchema": [
+      {"key": "source", "label": "数据源", "type": "textarea", "rows": 3, "default": "", "help": "留空取直接上游的值；可写 {{input.items}} 或 {{outputs[\"节点ID\"].text}}"},
+      {"key": "action", "label": "操作", "type": "select", "default": "unique", "options": [{"label": "稳定去重", "value": "unique"}, {"label": "筛选", "value": "filter"}, {"label": "提取字段", "value": "pluck"}, {"label": "排序", "value": "sort"}, {"label": "截取", "value": "slice"}, {"label": "展开一层", "value": "flatten"}]},
+      {"key": "field", "label": "字段路径", "type": "input", "default": "", "help": "留空处理元素本身；例如 user.name", "visibleWhen": {"action": ["unique", "filter", "pluck", "sort"]}},
+      {"key": "operator", "label": "筛选条件", "type": "select", "default": "eq", "options": [{"label": "等于", "value": "eq"}, {"label": "不等于", "value": "ne"}, {"label": "大于", "value": "gt"}, {"label": "大于等于", "value": "gte"}, {"label": "小于", "value": "lt"}, {"label": "小于等于", "value": "lte"}, {"label": "包含", "value": "contains"}, {"label": "字段存在", "value": "exists"}], "visibleWhen": {"action": ["filter"]}},
+      {"key": "compareValue", "label": "比较值", "type": "textarea", "rows": 2, "default": "", "help": "支持模板或 JSON 值；数字填 80，字符串填 \"active\"", "visibleWhen": {"action": ["filter"]}},
+      {"key": "missingPolicy", "label": "字段缺失时", "type": "select", "default": "null", "options": [{"label": "输出 null", "value": "null"}, {"label": "跳过", "value": "skip"}, {"label": "报错", "value": "fail"}], "visibleWhen": {"action": ["pluck"]}},
+      {"key": "descending", "label": "降序排列", "type": "switch", "default": false, "help": "空值和缺失字段始终排在最后", "visibleWhen": {"action": ["sort"]}},
+      {"key": "start", "label": "起始下标（包含）", "type": "number", "min": -10000, "max": 10000, "default": 0, "visibleWhen": {"action": ["slice"]}},
+      {"key": "end", "label": "结束下标（不包含）", "type": "number", "min": -10000, "max": 10000, "default": 10000, "visibleWhen": {"action": ["slice"]}},
+      {"type": "outputSchema", "key": "__outputSchema__", "label": "节点输出字段", "hasValueKey": true, "fields": [{"key": "items", "label": "结果数组", "type": "array"}, {"key": "value", "label": "结果数组", "type": "array"}, {"key": "text", "label": "JSON 文本", "type": "string"}, {"key": "count", "label": "结果数量", "type": "number"}, {"key": "inputCount", "label": "输入数量", "type": "number"}]}
+    ]
+  },
+  {
+    "type": "text_process",
+    "name": "文本处理",
+    "category": "文本",
+    "icon": "EditPen",
+    "color": "#0284c7",
+    "description": "清理空白、字面替换、拆分拼接、大小写和截断",
+    "sort": 83,
+    "configSchema": [
+      {"key": "source", "label": "数据源", "type": "textarea", "rows": 3, "default": "", "help": "留空取直接上游的值；可写 {{input.items}} 或 {{outputs[\"节点ID\"].text}}"},
+      {"key": "action", "label": "操作", "type": "select", "default": "trim", "options": [{"label": "去除首尾空白", "value": "trim"}, {"label": "字面替换", "value": "replace"}, {"label": "拆分为数组", "value": "split"}, {"label": "数组拼接", "value": "join"}, {"label": "转小写", "value": "lower"}, {"label": "转大写", "value": "upper"}, {"label": "截断", "value": "truncate"}]},
+      {"key": "search", "label": "查找文本", "type": "input", "default": "", "help": "仅字面匹配，不执行正则表达式", "visibleWhen": {"action": ["replace"]}},
+      {"key": "replacement", "label": "替换为", "type": "textarea", "rows": 2, "default": "", "visibleWhen": {"action": ["replace"]}},
+      {"key": "replaceCount", "label": "最多替换次数", "type": "number", "min": -1, "max": 10000, "default": -1, "help": "-1 替换全部，0 不替换", "visibleWhen": {"action": ["replace"]}},
+      {"key": "separator", "label": "分隔符", "type": "textarea", "rows": 2, "default": "\n", "visibleWhen": {"action": ["split", "join"]}},
+      {"key": "removeEmpty", "label": "拆分后移除空白项", "type": "switch", "default": false, "visibleWhen": {"action": ["split"]}},
+      {"key": "maxLength", "label": "最多保留字符", "type": "number", "min": 0, "max": 1000000, "default": 1000, "visibleWhen": {"action": ["truncate"]}},
+      {"type": "outputSchema", "key": "__outputSchema__", "label": "节点输出字段", "hasValueKey": true, "fields": [{"key": "value", "label": "处理结果", "type": "any"}, {"key": "text", "label": "文本结果", "type": "string"}, {"key": "items", "label": "拆分数组", "type": "array"}, {"key": "count", "label": "数组数量", "type": "number"}, {"key": "charCount", "label": "文本字符数", "type": "number"}, {"key": "truncated", "label": "是否截断", "type": "boolean"}]}
+    ]
+  },
+  {
+    "type": "csv",
+    "name": "CSV 转换",
+    "category": "数据",
+    "icon": "Grid",
+    "color": "#0891b2",
+    "description": "CSV 文本与对象数组互转，可直接接文件读写节点",
+    "sort": 84,
+    "configSchema": [
+      {"key": "source", "label": "数据源", "type": "textarea", "rows": 3, "default": "", "help": "留空取直接上游的值；可写 {{input.items}} 或 {{outputs[\"节点ID\"].text}}"},
+      {"key": "action", "label": "操作", "type": "select", "default": "parse", "options": [{"label": "CSV → 对象数组", "value": "parse"}, {"label": "对象数组 → CSV", "value": "generate"}]},
+      {"key": "delimiter", "label": "分隔符", "type": "input", "default": ",", "help": "一个字符；默认逗号，也可填写分号或制表符"},
+      {"key": "hasHeader", "label": "包含表头", "type": "switch", "default": true},
+      {"key": "columns", "label": "列名 / 导出顺序", "type": "tags", "default": [], "help": "留空自动取表头或对象字段；无表头时自动生成 column_1 等列名"},
+      {"key": "protectFormulas", "label": "防止表格公式注入", "type": "switch", "default": true, "help": "导出时在危险字符串前加单引号，不修改数值", "visibleWhen": {"action": ["generate"]}},
+      {"type": "outputSchema", "key": "__outputSchema__", "label": "节点输出字段", "hasValueKey": true, "fields": [{"key": "rows", "label": "对象数组", "type": "array"}, {"key": "value", "label": "转换结果", "type": "any"}, {"key": "text", "label": "文本结果", "type": "string"}, {"key": "columns", "label": "列名", "type": "array"}, {"key": "count", "label": "数据行数", "type": "number"}]}
+    ]
+  },
+  {
+    "type": "date_time",
+    "name": "日期时间",
+    "category": "工具",
+    "icon": "Calendar",
+    "color": "#64748b",
+    "description": "当前时间、格式化、时区转换、时间偏移与秒级差值",
+    "sort": 85,
+    "configSchema": [
+      {"key": "action", "label": "操作", "type": "select", "default": "now", "options": [{"label": "当前时间", "value": "now"}, {"label": "格式化 / 转时区", "value": "format"}, {"label": "时间偏移", "value": "add"}, {"label": "计算时间差", "value": "diff"}]},
+      {"key": "source", "label": "数据源", "type": "textarea", "rows": 3, "default": "", "help": "留空取直接上游的值；可写 {{input.items}} 或 {{outputs[\"节点ID\"].text}}", "visibleWhen": {"action": ["format", "add", "diff"]}},
+      {"key": "timezone", "label": "时区", "type": "input", "default": "Asia/Shanghai", "help": "IANA 时区，例如 Asia/Shanghai、UTC、America/New_York"},
+      {"key": "inputFormat", "label": "输入格式", "type": "input", "default": "", "help": "留空支持 ISO 8601 或 Unix 秒级时间戳；自定义如 %Y/%m/%d", "visibleWhen": {"action": ["format", "add", "diff"]}},
+      {"key": "outputFormat", "label": "输出文本格式", "type": "input", "default": "%Y-%m-%d %H:%M:%S", "visibleWhen": {"action": ["now", "format", "add"]}},
+      {"key": "offset", "label": "偏移量", "type": "number", "min": -315360000, "max": 315360000, "default": 1, "help": "负数向过去偏移；最多十年，一天按 24 小时计算", "visibleWhen": {"action": ["add"]}},
+      {"key": "unit", "label": "偏移单位", "type": "select", "default": "days", "options": [{"label": "秒", "value": "seconds"}, {"label": "分钟", "value": "minutes"}, {"label": "小时", "value": "hours"}, {"label": "天（24 小时）", "value": "days"}], "visibleWhen": {"action": ["add"]}},
+      {"key": "end", "label": "结束时间", "type": "textarea", "rows": 2, "default": "{{input.end}}", "help": "差值为结束时间减数据源时间，单位秒", "visibleWhen": {"action": ["diff"]}},
+      {"type": "outputSchema", "key": "__outputSchema__", "label": "节点输出字段", "hasValueKey": true, "fields": [{"key": "value", "label": "ISO 日期 / 时间差", "type": "any"}, {"key": "text", "label": "格式化文本", "type": "string"}, {"key": "iso", "label": "ISO 日期", "type": "string"}, {"key": "timestamp", "label": "Unix 秒级时间戳", "type": "number"}, {"key": "timezone", "label": "时区", "type": "string"}, {"key": "differenceSeconds", "label": "时间差（秒）", "type": "any"}]}
+    ]
+  },
+  {
+    "type": "validate",
+    "name": "数据校验",
+    "category": "数据",
+    "icon": "CircleCheck",
+    "color": "#16a34a",
+    "description": "检查必填、类型、枚举、数值与长度，失败终止或接条件分支",
+    "sort": 86,
+    "configSchema": [
+      {"key": "source", "label": "数据源", "type": "textarea", "rows": 3, "default": "", "help": "留空取直接上游的值；可写 {{input.items}} 或 {{outputs[\"节点ID\"].text}}"},
+      {"key": "rules", "label": "字段规则（JSON）", "type": "textarea", "rows": 6, "default": "{}", "help": "例如 {\"email\":{\"required\":true,\"type\":\"string\",\"minLength\":1},\"age\":{\"type\":\"integer\",\"min\":0}}；不是完整 JSON Schema"},
+      {"key": "stopOnError", "label": "校验失败终止节点", "type": "switch", "default": true, "help": "关闭后查看 valid / errors，并可连接条件分支"},
+      {"type": "outputSchema", "key": "__outputSchema__", "label": "节点输出字段", "hasValueKey": true, "fields": [{"key": "valid", "label": "是否通过", "type": "boolean"}, {"key": "errors", "label": "错误列表", "type": "array"}, {"key": "errorCount", "label": "错误数", "type": "number"}, {"key": "data", "label": "原数据", "type": "any"}, {"key": "value", "label": "原数据", "type": "any"}, {"key": "text", "label": "JSON 文本", "type": "string"}]}
+    ]
+  },
+  {
+    "type": "encode",
+    "name": "编码与摘要",
+    "category": "工具",
+    "icon": "Key",
+    "color": "#64748b",
+    "description": "Base64 / URL 编解码与 SHA-256 / SHA-512 内容摘要",
+    "sort": 87,
+    "configSchema": [
+      {"key": "source", "label": "数据源", "type": "textarea", "rows": 3, "default": "", "help": "留空取直接上游的值；可写 {{input.items}} 或 {{outputs[\"节点ID\"].text}}"},
+      {"key": "action", "label": "操作", "type": "select", "default": "sha256", "options": [{"label": "SHA-256 摘要", "value": "sha256"}, {"label": "SHA-512 摘要", "value": "sha512"}, {"label": "Base64 编码", "value": "base64_encode"}, {"label": "Base64 解码（UTF-8 文本）", "value": "base64_decode"}, {"label": "URL 百分号编码", "value": "url_encode"}, {"label": "URL 百分号解码", "value": "url_decode"}]},
+      {"type": "outputSchema", "key": "__outputSchema__", "label": "节点输出字段", "hasValueKey": true, "fields": [{"key": "value", "label": "处理结果", "type": "string"}, {"key": "text", "label": "文本结果", "type": "string"}, {"key": "action", "label": "操作", "type": "string"}, {"key": "charCount", "label": "字符数", "type": "number"}]}
+    ]
+  },
+  {
+    "type": "mcp_tool", "name": "MCP 工具", "category": "工具", "icon": "Connection",
+    "color": "#0891b2", "description": "调用已配置并授权的远程 MCP 工具", "sort": 88,
+    "configSchema": [
+      {"key": "serverId", "label": "MCP 服务", "type": "mcpServer", "default": ""},
+      {"key": "toolName", "label": "工具", "type": "mcpTool", "default": ""},
+      {"key": "arguments", "label": "参数（JSON）", "type": "textarea", "rows": 6, "default": "{}", "help": "例如 {\"query\":\"{{input.topic}}\"}，模板保留数字 / 数组类型"},
+      {"type": "outputSchema", "key": "__outputSchema__", "label": "节点输出字段", "hasValueKey": false, "fields": [{"key": "content", "label": "MCP 内容块", "type": "array"}, {"key": "data", "label": "结构化结果", "type": "any"}, {"key": "text", "label": "文本结果", "type": "string"}, {"key": "serverId", "label": "服务 ID", "type": "string"}, {"key": "toolName", "label": "工具名称", "type": "string"}]}
     ]
   }
 ]

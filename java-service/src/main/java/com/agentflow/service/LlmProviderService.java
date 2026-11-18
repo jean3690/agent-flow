@@ -115,6 +115,17 @@ public class LlmProviderService {
         return aiClient.postJson("/v1/providers/test", payload).path("data");
     }
 
+    /** 拉取服务商实际可用模型；明文 Key 只在发给 ai-service 的 POST body 中，前端 GET 不带任何凭据。 */
+    public JsonNode models(String provider) {
+        requireProvider(provider);
+        Map<String, String> credentials = credentials(provider);
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("provider", provider);
+        payload.put("apiKey", credentials == null ? "" : credentials.get("apiKey"));
+        payload.put("baseUrl", credentials == null ? "" : credentials.get("baseUrl"));
+        return aiClient.postJson("/v1/providers/models", payload).path("data");
+    }
+
     /** 单个服务商的已保存凭据，未配置时返回 null。 */
     public Map<String, String> credentials(String provider) {
         LlmProviderConfig config = findEntity(provider);

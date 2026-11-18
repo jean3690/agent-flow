@@ -1,6 +1,7 @@
 package com.agentflow.entity;
 
 import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -22,6 +23,11 @@ public class Workflow {
     private String flowData;
     private Integer status;
     private Integer version;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private Integer publishedVersion;
+
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private LocalDateTime publishedAt;
     private Long userId;
 
     @TableLogic

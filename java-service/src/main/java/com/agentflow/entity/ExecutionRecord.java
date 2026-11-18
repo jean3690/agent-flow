@@ -8,6 +8,7 @@ import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
@@ -25,6 +26,11 @@ public class ExecutionRecord {
     private String outputData;
     private String errorMessage;
     private Integer nodeCount;
+    private Integer flowVersion;
+    private Integer promptTokens;
+    private Integer completionTokens;
+    private Integer totalTokens;
+    private BigDecimal costUsd;
     private Long elapsedMs;
     private LocalDateTime startedAt;
     private LocalDateTime finishedAt;

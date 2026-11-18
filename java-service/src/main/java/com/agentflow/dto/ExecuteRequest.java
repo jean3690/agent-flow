@@ -1,11 +1,13 @@
 package com.agentflow.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.util.HashMap;
 import java.util.Map;
 
 @Data
+@Schema(description = "工作流执行请求参数")
 public class ExecuteRequest {
 
     private Map<String, Object> input = new HashMap<>();

@@ -18,6 +18,10 @@ spring:
   mvc:
     async:
       request-timeout: 0
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
 
 mybatis-plus:
   configuration:
@@ -35,6 +39,19 @@ springdoc:
     path: /swagger-ui.html
   api-docs:
     path: /v3/api-docs
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name:agent-flow-java}
 
 agentflow:
   jwt:
@@ -54,7 +71,32 @@ agentflow:
   crypto:
     # 服务商 Key 落库加密密钥；更换后旧密文将无法解密，请保持稳定
     key: ${CRYPTO_KEY:agent-flow-local-crypto-key}
+  pricing:
+    # 每 1K token 的估算单价（美元）；仅用于成本统计，不参与计费
+    default-input-per-1k: 0
+    default-output-per-1k: 0
+    models:
+      gpt-4o-mini:
+        input-per-1k: 0.00015
+        output-per-1k: 0.0006
+      gpt-4o:
+        input-per-1k: 0.0025
+        output-per-1k: 0.01
+      deepseek-chat:
+        input-per-1k: 0.00027
+        output-per-1k: 0.0011
+      qwen-plus:
+        input-per-1k: 0.0004
+        output-per-1k: 0.0012
+      glm-4:
+        input-per-1k: 0.00014
+        output-per-1k: 0.00014
+      agentflow-mock:
+        input-per-1k: 0
+        output-per-1k: 0
 
 logging:
+  pattern:
+    level: "%5p [runId:%X{runId:-}]"
   level:
     com.agentflow: INFO
