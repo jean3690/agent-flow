@@ -1,0 +1,28 @@
+{
+  "name": "agentflow-sdk",
+  "version": "0.1.0",
+  "description": "TypeScript SDK for the Agent Flow workflow orchestration service",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "engines": { "node": ">=20" },
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" }
+  },
+  "files": [
+    "dist/*.js",
+    "dist/*.d.ts",
+    "dist/resources",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "tsc -p tsconfig.test.json && node --test dist-test/tests/client.test.js tests/integrations.test.mjs",
+    "prepack": "npm run build"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  },
+  "license": "MIT"
+}
