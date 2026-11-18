@@ -2,6 +2,19 @@
 
 参考 PaiAgent 重构的 AI 工作流编排平台：**AI 能力交给 Python + LangGraph + FastAPI，业务与平台能力交给 Java Spring Boot**，前端使用 Vue 3。
 
+## 界面预览
+
+| 可视化编排（发布版本、节点配置） | 执行留痕（节点级输出与 token） |
+| --- | --- |
+| ![编辑器](docs/images/04-triage.png) | ![执行详情](docs/images/05-execution-detail.png) |
+
+| 工作流列表 | 8 节点数据管道 |
+| --- | --- |
+| ![工作流列表](docs/images/01-workflows.png) | ![数据管道](docs/images/02-editor.png) |
+
+> 截图由 `frontend/scripts/capture-docs.mjs` 对本地整栈生成，演示数据由 `e2e/seed_demo.py` 灌入，
+> 可以随时重跑得到一致画面，不依赖手工摆拍。
+
 ## 为什么拆成两个服务
 
 PaiAgent 把 DAG/LangGraph 引擎、模型调用和业务 CRUD 都塞在 Spring Boot 里。AgentFlow 做如下切分：
@@ -48,9 +61,16 @@ agent-flow/
 依赖装好后，仓库根目录执行：
 
 ```bash
-./start.sh          # 启动 AI + Java + 前端，Ctrl+C 一起停止
-./start.sh status   # 查看三端健康状态
-./start.sh stop     # 停止脚本启动的进程
+./start.sh                  # 启动 AI + Java + 前端，Ctrl+C 一起停止
+./start.sh status           # 查看三端健康状态
+./start.sh stop             # 停止脚本启动的进程
+python3 e2e/seed_demo.py    # 可选：灌入两条演示工作流、发布版本与执行记录
+```
+
+想用独立数据库录屏或压测，可以指定数据目录，不影响 `./data` 里的日常数据：
+
+```bash
+H2_PATH=/tmp/agentflow-demo/agentflow ./start.sh
 ```
 
 日志统一写入 `logs/`（`ai.log` / `java.log` / `web.log`）。
@@ -111,7 +131,16 @@ make test-web     # 前端 SSE 单元回归（无需浏览器和后端）
 make test-ui      # 编辑/保存/调试隔离回归（mock API，自动启动前端，无需后端）
 ```
 
-当前 `make test` 共 **476 个用例**：AI 服务 281、Java 服务 89、前端 SSE 13、Python SDK 47、TypeScript SDK 25、Java SDK 21（不包含整栈冒烟与 UI 测试）。涵盖编排、节点执行、数据转换与校验、MCP / Skills 接入、长期记忆、权限隔离、排队取消、任务拒绝收尾、SSE 边界与 SDK 接入；用例数不等于代码覆盖率或性能指标。
+当前 `make test` 共 **496 个用例**：AI 服务 281、Java 服务 109、前端 SSE 13、Python SDK 47、TypeScript SDK 25、Java SDK 21（不包含整栈冒烟与 UI 测试）。涵盖编排、节点执行、数据转换与校验、MCP / Skills 接入、长期记忆、权限隔离、排队取消、任务拒绝收尾、崩溃恢复、调度租约、SSE 边界与 SDK 接入。
+
+覆盖率与性能基线（本机单实例，可复现）：
+
+```bash
+make coverage   # AI 服务语句 77% / 分支 81%；Java 服务行 48% / 分支 40%
+make bench      # 并发 20：129 req/s、P95 232 ms（3 节点流程，无模型调用）
+```
+
+CI 对覆盖率设了门槛（AI 70%、Java 行 40%），低于门槛直接失败。用例数与覆盖率只说明测试触达范围，不代表真实模型效果或生产容量；压测口径与边界见 [本地性能基线](docs/benchmark.md)。
 
 前端隔离浏览器回归与真实整栈冒烟分开运行，首次使用需在 `frontend/` 执行 `npx playwright install chromium`。详见 [编辑与调试可靠性打磨](docs/editor-reliability.md)。
 
@@ -224,12 +253,15 @@ SDK 当前随源码提供，尚不以公共包仓库发布为前提；请勿直�
 - **执行中心**：全局执行历史、状态筛选、节点输出回看，支持取消运行中的任务与断点续跑（复用已成功节点输出）
 - **执行留痕**：每次执行写入 execution_record 与 execution_node_log
 - **执行安全与故障收尾**：非管理员仅能查看、取消、删除本人记录；子工作流同样校验归属。排队任务可取消，任务拒绝返回 503 并记录失败，异常中断会收尾未完成节点，避免残留运行中状态
+- **崩溃恢复**：启动时把上次进程遗留的 RUNNING 执行与未结束节点统一置为 FAILED 并补齐耗时，避免永久「运行中」的脏数据，见 [可靠性设计](docs/reliability.md)
+- **多实例调度去重**：CRON 触发器派发前抢 `scheduler_lock` 表租约（默认 10s，自动过期），多副本不会对同一触发点重复执行
+- **资源级归属校验**：工作流、执行记录、知识库及其文档都按归属过滤，越权统一返回 404，避免通过 ID 探测他人资源
 
 ## 项目展示与边界
 
 - [简历项目介绍与面试讲解](docs/resume-project.md)：Java 后端版、AI 应用版、技术依据与真实能力边界。
 - [本轮完善与验证记录](docs/improvement-report.md)：问题修复、测试结果、后续生产化优先级。
-- 当前适合个人项目展示与小规模部署。分布式调度锁、持久化任务队列、租户级文件/知识库隔离及性能压测仍需完善，详见部署说明；不要将现有功能等同于已验证的高可用生产系统。
+- 当前适合个人项目展示与小规模部署。已具备执行崩溃恢复、CRON 派发租约与知识库归属校验（见 [可靠性设计](docs/reliability.md)），但持久化任务队列、跨实例取消路由、文件目录多租户与 MySQL 实机验证仍需完善，详见部署说明；不要将现有功能等同于已验证的高可用生产系统。
 
 ## 文档
 
@@ -238,6 +270,8 @@ SDK 当前随源码提供，尚不以公共包仓库发布为前提；请勿直�
 - [数据库设计](docs/schema.mysql.sql)
 - [部署说明](docs/deploy.md)
 - [简历项目介绍](docs/resume-project.md)
+- [可靠性设计](docs/reliability.md)
+- [本地性能基线](docs/benchmark.md)
 - [完善与验证记录](docs/improvement-report.md)
 - [编辑与调试可靠性打磨](docs/editor-reliability.md)
 - [实用数据与工具节点](docs/data-nodes.md)
