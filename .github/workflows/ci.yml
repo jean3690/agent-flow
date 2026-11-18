@@ -19,11 +19,11 @@ jobs:
           cache: pip
           cache-dependency-path: ai-service/pyproject.toml
 
-      - name: Python 测试
+      - name: Python 测试与覆盖率
         working-directory: ai-service
         run: |
           pip install -e ".[dev]"
-          python -m pytest -q
+          python -m pytest -q --cov=app --cov-report=term --cov-fail-under=70
 
       - uses: actions/setup-java@v4
         with:
@@ -31,9 +31,11 @@ jobs:
           java-version: "21"
           cache: maven
 
-      - name: Java 测试
+      - name: Java 测试与覆盖率
         working-directory: java-service
         run: mvn -q test
+      # jacoco 的 prepare-agent / report / check 绑定在 test 阶段，
+      # test 通过即代表行覆盖率不低于 40%（低于门槛会直接让构建失败）。
 
       - uses: actions/setup-node@v4
         with:
@@ -48,6 +50,14 @@ jobs:
           npm test
           npm run typecheck
           npm run build
+
+      - name: 上传覆盖率报告
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: |
+            java-service/target/site/jacoco
+          if-no-files-found: ignore
 
   sdk:
     name: 官方 SDK 测试
