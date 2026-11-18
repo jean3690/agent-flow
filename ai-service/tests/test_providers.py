@@ -61,3 +61,28 @@ def test_provider_test_endpoint_handles_mock_and_unknown():
     unknown = asyncio.run(providers_api.test_connection(ProviderTestRequest(provider="unknown")))["data"]
     assert unknown["ok"] is False
     assert "未知服务商" in unknown["message"]
+
+
+def test_non_chat_provider_test_returns_guidance():
+    result = asyncio.run(providers_api.test_connection(ProviderTestRequest(provider="agnes")))["data"]
+    assert result["ok"] is False
+    assert "不支持对话" in result["message"]
+
+
+def test_search_provider_checks_tavily(monkeypatch):
+    async def fake_search(api_key, base_url, query, **kwargs):
+        assert api_key == "tvly-test"
+        assert query
+        return {"results": [{"title": "ping", "url": "https://example.test"}]}
+
+    monkeypatch.setattr(providers_api, "tavily_search", fake_search)
+    result = asyncio.run(providers_api.test_connection(
+        ProviderTestRequest(provider="tavily", apiKey="tvly-test")))["data"]
+    assert result["ok"] is True
+    assert result["results"] == 1
+
+
+def test_qwen_settings_alias_resolves_dashscope():
+    settings = Settings(dashscope_api_key="dash-key", dashscope_base_url="https://dash.example/v1")
+    assert settings.api_key_for("qwen") == "dash-key"
+    assert settings.base_url_for("qwen") == "https://dash.example/v1"

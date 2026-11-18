@@ -50,3 +50,12 @@ def test_render_template():
     names = build_names({"topic": "LangGraph"}, {}, {"llm1": {"text": "结果"}})
     assert render("主题：{{topic}}，结果：{{llm1.text}}", names) == "主题：LangGraph，结果：结果"
     assert render("缺失：{{nope}}", names) == "缺失：[nope: 未知变量: nope]"
+
+
+def test_subscript_reference_survives_hyphenated_ids_and_value_compression():
+    # 节点 id 带连字符（前端生成），且输出含 value 时 build_names 会把它压成标量。
+    # 配置抽屉生成的 {{outputs["<id>"].<field>}} 是唯一恒有效的引用形式。
+    names = build_names({}, {}, {"llm-k3j9x2": {"value": "raw", "text": "结果"}})
+    assert names["llm-k3j9x2"] == "raw"
+    assert render('{{outputs["llm-k3j9x2"].text}}', names) == "结果"
+    assert evaluate('outputs["llm-k3j9x2"].text', names) == "结果"

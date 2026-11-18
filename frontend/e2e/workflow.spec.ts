@@ -8,12 +8,19 @@ async function nodeCount(page: any) {
   return page.locator('.vue-flow__node').count()
 }
 
-// Click a palette item in the left sidebar, then dismiss the config drawer.
+// Click a palette item in the left sidebar. Adding a node must NOT open the config drawer.
 async function addNode(page: any, label: string) {
   await page.locator('aside').getByText(label, { exact: true }).click()
   await page.waitForTimeout(200)
-  await page.keyboard.press('Escape')
-  await page.waitForTimeout(200)
+}
+
+async function fitView(page: any) {
+  await page.evaluate(() => {
+    const btns = Array.from(document.querySelectorAll('.vue-flow__controls-button'))
+    const fit = btns.find((b) => /fit/i.test((b as any).title || b.getAttribute('aria-label') || b.textContent || ''))
+    if (fit) (fit as any).click()
+  })
+  await page.waitForTimeout(300)
 }
 
 // Read a handle's center in viewport coordinates via the DOM (no stability wait),
@@ -100,12 +107,7 @@ test('build and run a minimal workflow through the canvas', async ({ page }) => 
   expect(outputId).toBeTruthy()
 
   // bring all nodes into view so handles are reachable
-  await page.evaluate(() => {
-    const btns = Array.from(document.querySelectorAll('.vue-flow__controls-button'))
-    const fit = btns.find((b) => /fit/i.test((b as any).title || b.getAttribute('aria-label') || b.textContent || ''))
-    if (fit) (fit as any).click()
-  })
-  await page.waitForTimeout(300)
+  await fitView(page)
 
   // connect them
   await connect(page, inputId as string, templateId as string)
@@ -130,4 +132,48 @@ test('build and run a minimal workflow through the canvas', async ({ page }) => 
 
   // no uncaught console errors (direct guard for the structuredClone regression)
   expect(errors).toEqual([])
+})
+
+test('config drawer opens only on node click and lists direct upstream nodes', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: '进入工作台' }).click()
+  await expect(page.url()).toContain('#/')
+
+  await page.getByRole('button', { name: '新建工作流' }).click()
+  await page.getByPlaceholder('例如：文章摘要流水线').fill('Playwright 抽屉交互')
+  await page.getByRole('button', { name: '创建并编辑' }).click()
+  await page.waitForURL('**/#/editor/**', { timeout: 15000 })
+
+  await addNode(page, '开始')
+  await addNode(page, '文本模板')
+  await expect(nodeCount(page)).resolves.toBe(2)
+
+  // 添加节点不再自动弹出配置抽屉
+  await expect(page.locator('.config__title')).toBeHidden()
+
+  const ids: string[] = await nodeIds(page)
+  const inputId = ids.find((id) => id.indexOf('input-') === 0) as string
+  const templateId = ids.find((id) => id.indexOf('template-') === 0) as string
+
+  await page.locator(`[data-id="${templateId}"]`).click()
+  await expect(page.locator('.config__title')).toBeVisible()
+
+  // 无上游时提示连接
+  await expect(page.getByText('连接上游节点后，可在提示词里点击插入其输出字段。')).toBeVisible()
+
+  await page.keyboard.press('Escape')
+  await expect(page.locator('.config__title')).toBeHidden()
+
+  await fitView(page)
+  await connect(page, inputId, templateId)
+
+  await page.locator(`[data-id="${templateId}"]`).click()
+  await expect(page.getByText('直接上游 / 可引用变量')).toBeVisible()
+  await expect(page.locator('.config__upstream')).toHaveCount(1)
+
+  // 点击上游输出字段 chip，应把安全引用插入当前聚焦的模板输入框
+  const templateInput = page.locator('.config textarea').first()
+  await templateInput.click()
+  await page.locator('.config__upstream .config__chip').first().click()
+  await expect(templateInput).toHaveValue(/outputs\["/)
 })

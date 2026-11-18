@@ -3,7 +3,12 @@ package com.agentflow.util;
 import com.agentflow.common.BizException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -49,6 +54,39 @@ class FlowValidatorTest {
                 }
                 """);
         FlowValidator.validate(flow);
+    }
+
+    @Test
+    void acceptsRouterWithConfiguredTargets() throws Exception {
+        ObjectNode flow = mapper.createObjectNode();
+        ArrayNode nodes = flow.putArray("nodes");
+        nodes.addObject().put("id", "a").put("type", "input");
+        ObjectNode router = nodes.addObject().put("id", "router").put("type", "llm_router");
+        ObjectNode config = router.putObject("config");
+        config.put("routes", mapper.writeValueAsString(List.of(
+                Map.of("name", "技术", "target", "tech"),
+                Map.of("name", "生活", "target", "life"))));
+        config.put("fallbackTarget", "life");
+        nodes.addObject().put("id", "tech").put("type", "template");
+        nodes.addObject().put("id", "life").put("type", "template");
+        flow.putArray("edges").addObject().put("source", "a").put("target", "router");
+
+        FlowValidator.validate(flow);
+    }
+
+    @Test
+    void rejectsRouterWithUnknownTarget() throws Exception {
+        ObjectNode flow = mapper.createObjectNode();
+        ArrayNode nodes = flow.putArray("nodes");
+        nodes.addObject().put("id", "a").put("type", "input");
+        ObjectNode router = nodes.addObject().put("id", "router").put("type", "llm_router");
+        router.putObject("config").put("routes", mapper.writeValueAsString(List.of(
+                Map.of("name", "技术", "target", "ghost"))));
+        flow.putArray("edges").addObject().put("source", "a").put("target", "router");
+
+        assertThatThrownBy(() -> FlowValidator.validate(flow))
+                .isInstanceOf(BizException.class)
+                .hasMessageContaining("路由分支指向不存在的节点");
     }
 
     @Test
@@ -110,6 +148,17 @@ class FlowValidatorTest {
     void structureAcceptsEmptyFlow() throws Exception {
         // 新建/保存工作流允许空白画布，只有执行时才要求图非空且存在入口节点。
         FlowValidator.validateStructure(flow("{\"nodes\": [], \"edges\": []}"));
+    }
+
+    @Test
+    void structureAcceptsUnconfiguredRouter() throws Exception {
+        ObjectNode flow = mapper.createObjectNode();
+        ArrayNode nodes = flow.putArray("nodes");
+        nodes.addObject().put("id", "a").put("type", "input");
+        nodes.addObject().put("id", "router").put("type", "llm_router");
+        flow.putArray("edges");
+
+        FlowValidator.validateStructure(flow);
     }
 
     @Test
