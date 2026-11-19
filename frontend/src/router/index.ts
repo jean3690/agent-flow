@@ -14,6 +14,7 @@ const router = createRouter({
     { path: '/approvals', name: 'approvals', component: () => import('../pages/ApprovalsPage.vue') },
     { path: '/executions', name: 'executions', component: () => import('../pages/ExecutionsPage.vue') },
     { path: '/files', name: 'files', component: () => import('../pages/FilesPage.vue') },
+    { path: '/live-translation', name: 'live-translation', component: () => import('../pages/LiveTranslationPage.vue') },
     { path: '/:pathMatch(.*)*', redirect: '/' }
   ]
 })

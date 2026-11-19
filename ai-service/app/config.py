@@ -34,6 +34,8 @@ class Settings(BaseSettings):
     deepseek_base_url: str = "https://api.deepseek.com/v1"
     dashscope_api_key: str = ""
     dashscope_base_url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    # Workspace host (without protocol/path), required by LiveTranslate 3.8.
+    dashscope_api_host: str = ""
     zhipu_api_key: str = ""
     zhipu_base_url: str = "https://open.bigmodel.cn/api/paas/v4"
     aiping_api_key: str = ""

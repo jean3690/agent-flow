@@ -26,6 +26,7 @@
           <el-button @click="router.push('/executions')">执行记录</el-button>
           <el-button @click="router.push('/files')">文件</el-button>
           <el-button @click="router.push('/providers')">模型配置</el-button>
+          <el-button @click="router.push('/live-translation')">实时翻译</el-button>
           <el-button @click="router.push('/skills')">Skills</el-button>
           <el-button @click="router.push('/mcp')">MCP</el-button>
           <el-button @click="importInput?.click()">导入</el-button>

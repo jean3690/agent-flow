@@ -16,6 +16,8 @@ import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.WebSocket;
+import java.util.concurrent.CompletableFuture;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -125,6 +127,15 @@ public class AiClient {
         } catch (IOException | InterruptedException ex) {
             throw wrap("提交执行失败", ex);
         }
+    }
+
+    /** Live media goes to Python; vendor credentials never pass through the browser. */
+    public CompletableFuture<WebSocket> openRealtime(WebSocket.Listener listener) {
+        String url = baseUrl().replaceFirst("^http", "ws") + "/v1/translations/realtime/ws";
+        return httpClient.newWebSocketBuilder()
+                .connectTimeout(Duration.ofSeconds(10))
+                .header("X-Internal-Token", properties.getInternal().getToken())
+                .buildAsync(URI.create(url), listener);
     }
 
     public byte[] download(String path) {

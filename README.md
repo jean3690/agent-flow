@@ -126,12 +126,13 @@ make test-sdk     # 仅测试 Python / TypeScript / Java SDK
 make check        # 全部测试 + 前端/SDK 类型检查 + 构建
 make e2e          # 对已启动的整栈运行后端冒烟
 make e2e-service  # API Key、同步执行、OpenAPI 接入验证
+make e2e-translations # 图片翻译节点和实时语音翻译 WebSocket 链路（显式 mock）
 make e2e-ui       # Playwright 浏览器测试
 make test-web     # 前端 SSE 单元回归（无需浏览器和后端）
 make test-ui      # 编辑/保存/调试隔离回归（mock API，自动启动前端，无需后端）
 ```
 
-当前 `make test` 共 **496 个用例**：AI 服务 281、Java 服务 109、前端 SSE 13、Python SDK 47、TypeScript SDK 25、Java SDK 21（不包含整栈冒烟与 UI 测试）。涵盖编排、节点执行、数据转换与校验、MCP / Skills 接入、长期记忆、权限隔离、排队取消、任务拒绝收尾、崩溃恢复、调度租约、SSE 边界与 SDK 接入。
+当前 `make test` 共 **531 个用例**：AI 服务 309、Java 服务 116、前端 SSE 13、Python SDK 47、TypeScript SDK 25、Java SDK 21（不包含整栈冒烟与 UI 测试）。涵盖编排、节点执行、百炼翻译协议与票据、数据转换与校验、MCP / Skills 接入、长期记忆、权限隔离、排队取消、任务拒绝收尾、崩溃恢复、调度租约、SSE 边界与 SDK 接入。
 
 覆盖率与性能基线（本机单实例，可复现）：
 
@@ -237,6 +238,7 @@ SDK 当前随源码提供，尚不以公共包仓库发布为前提；请勿直�
 - **Agent 范式节点**：计划执行（Plan-and-Execute）、反思迭代（Reflexion）、多智能体讨论、协调执行（Orchestrator-Workers）、结果评审、自洽投票、LLM 意图路由；mock 模式可离线跑通，见 [Agent 范式节点](docs/agent-paradigms.md)
 - **人工审批**：`human_approval` 节点创建待办并等待通过 / 驳回，执行级超时自动延长；「审批」页可处理，适合发布、外发等敏感动作前把关
 - **多模态节点**：`image_generate` 适配 OpenAI / StepFun / 火山方舟，`video_generate` 适配通用轮询接口 / Agnes / 火山方舟，产物统一走媒体文件代理
+- **百炼翻译**：`image_translate` 适配 `qwen-mt-image-2.0`，支持本地图片临时上传、保留排版与 JPG 产物；独立「实时翻译」页面适配 `qwen3.8-livetranslate-flash-realtime`，支持麦克风、原文/译文字幕及译音播放，见 [配置与边界](docs/bailian-translations.md)
 - **安全与检索质量**：服务商 Key AES-GCM 落库加密；知识检索混合重排（向量 + 词法）
 - **服务商凭据前端可配**：Key / Base URL 在「模型配置」页保存到 Java 库，执行时下发给 AI 服务，环境变量兜底
 - **可观测性与成本**：Prometheus 指标（执行/节点耗时、失败率、运行中数量、按模型 token）、执行级 token 与估算成本、日志自动携带 runId
@@ -280,6 +282,7 @@ SDK 当前随源码提供，尚不以公共包仓库发布为前提；请勿直�
 - [RAG 节点](docs/rag-nodes.md)
 - [MCP 与 Skills 配置](docs/mcp-skills.md)
 - [程序化配置 MCP 与 Skills](docs/sdk-integrations.md)
+- [百炼图片与实时语音翻译](docs/bailian-translations.md)
 
 ## License
 

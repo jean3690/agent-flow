@@ -1,4 +1,4 @@
-.PHONY: help ai java web install install-sdk test test-ai test-java test-web test-sdk typecheck check build compose e2e e2e-service e2e-ui test-ui coverage bench
+.PHONY: help ai java web install install-sdk test test-ai test-java test-web test-sdk typecheck check build compose e2e e2e-service e2e-translations e2e-ui test-ui coverage bench
 
 PYTHON ?= $(CURDIR)/ai-service/.venv/bin/python
 
@@ -76,6 +76,9 @@ e2e:
 
 e2e-service:
 	python3 e2e/verify_service.py
+
+e2e-translations:
+	$(PYTHON) e2e/verify_translations.py
 
 coverage:
 	cd ai-service && $(PYTHON) -m pytest -q --cov=app --cov-report=term --cov-report=html:../coverage/ai

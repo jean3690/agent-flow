@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from app.catalog_data import data_catalog
+from app.catalog_translation import translation_catalog
 from app.llm.providers import chat_providers
 from app.skills.registry import get_skill_registry
 
@@ -50,6 +51,14 @@ _OUTPUT_FIELDS: dict[str, list[tuple[str, str, str]]] = {
     "vision_analyze": [
         ("text", "分析结果", "string"), ("imageUrl", "图片地址", "string"),
         ("model", "模型", "string"), ("usage", "用量", "object"), ("mock", "是否模拟", "boolean"),
+    ],
+    "image_translate": [
+        ("imageUrl", "翻译图片", "string"), ("originalImageUrl", "原始图片", "string"),
+        ("provider", "服务商", "string"), ("model", "模型", "string"),
+        ("sourceLang", "源语种", "string"), ("targetLang", "目标语种", "string"),
+        ("message", "提示信息", "string"), ("usage", "用量", "object"),
+        ("requestId", "百炼请求 ID", "string"), ("mock", "是否模拟", "boolean"),
+        ("createdAt", "创建时间", "number"),
     ],
     "video_generate": [
         ("videoUrl", "视频地址", "string"), ("posterUrl", "海报地址", "string"),
@@ -1136,6 +1145,7 @@ def node_catalog() -> list[dict]:
         },
     ]
     catalog.extend(data_catalog())
+    catalog.extend(translation_catalog())
     for node in catalog:
         node["configSchema"] = [*node["configSchema"], output_meta(node["type"])]
     return catalog

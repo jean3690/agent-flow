@@ -7,7 +7,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api import catalog, embeddings, executions, files, health, mcp, providers, skills
+from app.api import catalog, embeddings, executions, files, health, mcp, providers, skills, translations
 from app.config import get_settings
 from app.core.errors import AgentFlowError
 from app.core.logging import setup_logging
@@ -45,6 +45,7 @@ app.include_router(embeddings.router)
 app.include_router(executions.router)
 app.include_router(files.router)
 app.include_router(mcp.router)
+app.include_router(translations.router)
 
 
 @app.exception_handler(AgentFlowError)

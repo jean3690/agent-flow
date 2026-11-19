@@ -9,6 +9,7 @@ from app.nodes import (  # noqa: F401
     file_nodes,
     http_node,
     image_node,
+    image_translate_node,
     input_node,
     knowledge_node,
     llm_node,

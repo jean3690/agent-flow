@@ -4,7 +4,7 @@ import { mockEditor } from './fixtures'
 
 // Exercise the real catalog rather than simplified test-only config schemas.
 const definitions = JSON.parse(readFileSync('../java-service/src/main/resources/node-definitions.json', 'utf-8'))
-const nodeNames = ['JSON 解析', '字段映射', '列表处理', '文本处理', 'CSV 转换', '日期时间', '数据校验', '编码与摘要']
+const nodeNames = ['JSON 解析', '字段映射', '列表处理', '文本处理', 'CSV 转换', '日期时间', '数据校验', '编码与摘要', '图片翻译']
 
 for (const name of nodeNames) {
   test(`${name}: palette entry, defaults, configuration and output fields`, async ({ page }) => {
@@ -16,6 +16,12 @@ for (const name of nodeNames) {
     const drawer = page.getByRole('dialog')
     await expect(drawer.getByText(name + ' 配置', { exact: true })).toBeVisible()
     await expect(drawer.getByText('配置本节点输出字段', { exact: true })).toBeVisible()
+    if (name === '图片翻译') {
+      await expect(drawer.locator('.el-form-item').filter({ has: page.getByText('模型', { exact: true }) }).locator('input')).toHaveValue('qwen-mt-image-2.0')
+      await expect(drawer.locator('.el-form-item').filter({ has: page.getByText('源语种', { exact: true }) }).locator('input')).toHaveValue('auto')
+      await expect(drawer.locator('.el-form-item').filter({ has: page.getByText('目标语种', { exact: true }) }).locator('input')).toHaveValue('en')
+      await expect(drawer.getByRole('button', { name: '浏览', exact: true })).toBeVisible()
+    }
     await page.keyboard.press('Escape')
     await expect(drawer).toBeHidden()
     await page.getByRole('button', { name: '保存', exact: true }).click()

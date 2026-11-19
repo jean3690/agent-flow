@@ -23,6 +23,8 @@ public class WebConfig implements WebMvcConfigurer {
                 .excludePathPatterns(
                         "/api/auth/login",
                         "/api/system/health",
+                        // WS authenticates with a one-use ticket issued by an authenticated REST request.
+                        "/api/translations/realtime/ws",
                         "/api/system/ai-health");
     }
 

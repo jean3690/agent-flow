@@ -11,6 +11,8 @@ services:
       AI_MCP_PRIVATE_HOSTS: ${AI_MCP_PRIVATE_HOSTS:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
+      AI_DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY:-}
+      AI_DASHSCOPE_API_HOST: ${DASHSCOPE_API_HOST:-}
     volumes:
       - ai-data:/srv/data
     healthcheck:
