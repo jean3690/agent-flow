@@ -14,8 +14,11 @@
 [![LangGraph4j](https://img.shields.io/badge/LangGraph4j-1.8.0--beta3-purple.svg)](https://github.com/bsorrentino/langgraph4j)
 [![React](https://img.shields.io/badge/React-18.x-61dafb.svg)](https://reactjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
+[![Python](https://img.shields.io/badge/Python-3.12+-blue.svg)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009485.svg)](https://fastapi.tiangolo.com/)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED.svg)](https://docs.docker.com/compose/)
 
-[快速开始](#-快速开始) • [功能特性](#-核心特性) • [技术架构](#-技术架构) • [使用文档](./USER_GUIDE.md) • [开发进度](./PROGRESS.md)• [国内AtomGit托管](https://atomgit.com/javabetter/PaiAgent)
+[快速开始](#-快速开始) • [Docker 部署](#-docker-一键启动推荐) • [功能特性](#-核心特性) • [技术架构](#-技术架构) • [使用文档](./docs/USER_GUIDE.md) • [开发进度](./docs/PROGRESS.md) • [国内AtomGit托管](https://atomgit.com/javabetter/PaiAgent)
 
 </div>
 
@@ -24,6 +27,8 @@
 ## 📖 项目简介
 
 AgentFlow 是一个**企业级的 AI 工作流可视化编排平台**，让 AI 能力的组合和调度变得简单高效。通过直观的拖拽式界面，开发者和业务人员都能快速构建复杂的 AI 处理流程，无需编写代码即可实现多种大模型的协同工作。
+
+仓库同时提供 **Java（Spring Boot）** 与 **Python（FastAPI）** 两套后端实现，接口路径、响应结构与 SSE 事件格式完全一致，前端无需改动即可切换。推荐使用 Docker Compose 一键启动整套环境；详见 [python-backend/README.md](./python-backend/README.md)。
 
 ![AgentFlow架构](https://cdn.tobebetterjavaer.com/paicoding/README-20576c3dc7944a46b135996af79ffa59.png)
 
@@ -160,6 +165,8 @@ AgentFlow 是一个**企业级的 AI 工作流可视化编排平台**，让 AI �
 └─────────────────────────────────────────────────────────┘
 ```
 
+> Python 实现（`python-backend/`）用 FastAPI + SQLAlchemy 替换应用层与数据访问层，执行引擎、节点执行器、接口契约和事件格式与 Java 版保持一致。
+
 ### 技术栈详情
 
 <table>
@@ -240,6 +247,32 @@ AgentFlow 是一个**企业级的 AI 工作流可视化编排平台**，让 AI �
 <td>MinIO</td>
 <td>可选</td>
 <td>对象存储服务</td>
+</tr>
+<tr>
+<td rowspan="5"><b>后端（Python 实现）</b></td>
+<td>FastAPI + Uvicorn</td>
+<td>0.115+ / 0.30+</td>
+<td>与 Java 版接口完全兼容</td>
+</tr>
+<tr>
+<td>SQLAlchemy + PyMySQL</td>
+<td>2.x</td>
+<td>数据访问层</td>
+</tr>
+<tr>
+<td>PyJWT + Redis</td>
+<td>-</td>
+<td>认证与刷新令牌</td>
+</tr>
+<tr>
+<td>httpx</td>
+<td>0.27+</td>
+<td>OpenAI 兼容模型调用</td>
+</tr>
+<tr>
+<td>Docker Compose</td>
+<td>v2</td>
+<td>一键启动基础设施与前后端</td>
 </tr>
 <tr>
 <td rowspan="7"><b>核心引擎</b></td>
@@ -358,16 +391,28 @@ AgentFlow/
 │   │   ├── utils/               # 工具函数
 │   │   └── App.tsx              # 应用入口
 │   ├── package.json             # NPM 依赖配置
+│   ├── Dockerfile               # 前端镜像（Nginx 托管 + /api 反代）
+│   ├── nginx.conf               # Nginx 配置（含 SSE 支持）
 │   └── vite.config.ts           # Vite 构建配置
 │
+├── python-backend/               # Python FastAPI 后端（接口与 Java 版兼容）
+│   ├── app/                      # 路由 / 引擎 / 执行器 / 服务 / 数据模型
+│   │   ├── main.py              # FastAPI 入口、鉴权中间件、CORS
+│   │   ├── engine.py            # DAG 引擎、断点续跑、LangGraph 等价引擎
+│   │   ├── executors.py         # 全部节点执行器
+│   │   └── routers/             # 与 Java Controller 一一对应的路由
+│   ├── tests/smoke_test.py      # 端到端冒烟测试（SQLite，无需 MySQL）
+│   ├── Dockerfile               # 后端镜像
+│   ├── docker-compose.yml       # MySQL + Redis + 对象存储 + 后端 + 前端
+│   └── README.md                # Python 后端说明
+│
 ├── docs/                         # 📚 项目文档
-│   ├── README.md                # 项目概览（当前文件）
 │   ├── USER_GUIDE.md            # 用户使用指南
 │   ├── PROGRESS.md              # 开发进度追踪
 │   ├── SUMMARY.md               # 项目技术总结
-│   ├── AGENTS.md                # AI Agent 开发指引
-│   └── mermaid.md               # 架构可视化图表
+│   └── PROJECT_COMPLETION_REPORT.md  # 项目交付报告
 │
+├── AGENTS.md                     # AI Agent 开发指引
 └── .gitignore                   # Git 忽略配置
 ```
 
@@ -379,18 +424,62 @@ AgentFlow/
 
 | 工具 | 版本要求 | 说明 |
 |------|---------|------|
-| Java | 21+ | 推荐使用 OpenJDK 或 Oracle JDK |
-| Node.js | 18+ | 包含 npm 包管理器 |
+| Java | 21 | Java 后端；Lombok 与新版本 JDK 不兼容时请使用 JDK 21 |
+| Python | 3.12+ | Python 后端 |
+| Node.js | 18+ | 前端开发 |
 | MySQL | 8.0+ | 数据库服务 |
 | Maven | 3.8+ | Java 项目构建工具 |
+| Docker / Docker Compose | 20+ / v2 | Docker 一键启动（推荐） |
 
-### 一键启动指南
+> Java 后端与 Python 后端默认都监听 `8084`，二者任选其一，不要同时启动。
+
+### 🐳 Docker 一键启动（推荐）
+
+```bash
+git clone https://github.com/jean3690/agent-flow.git
+cd agent-flow/python-backend
+
+# MySQL + Redis + 对象存储 + Python 后端
+docker compose up -d --build
+
+# 需要前端时（Nginx 托管构建产物，并把 /api 反代到后端）
+docker compose --profile full up -d --build
+```
+
+| 服务 | 地址 | 说明 |
+|------|------|------|
+| 后端 API | http://localhost:8084 | Swagger: `/docs` |
+| 前端 | http://localhost:5173 | `--profile full` 时启动 |
+| MySQL | localhost:13306 | root / `agentflow123`（可用 `MYSQL_ROOT_PASSWORD` 覆盖） |
+| Redis | localhost:16379 | 刷新令牌 |
+| 对象存储 | http://localhost:19000 | 默认 S3 兼容 RustFS，控制台 19001 |
+
+首次启动会自动建库 `agent_flow` 并执行原生 `schema.sql`。查看日志：`docker compose logs -f backend`；停止并清理数据：`docker compose down -v`。
+
+### 方式二：本地启动 Python 后端
+
+```bash
+cd python-backend
+python3 -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+cp .env.example .env               # 按需修改 MySQL / Redis / MinIO 配置
+python run.py                      # http://localhost:8084
+```
+
+冒烟测试（使用临时 SQLite，无需 MySQL）：
+
+```bash
+python tests/smoke_test.py
+```
+
+### 方式三：本地启动 Java 后端（原有实现）
 
 #### 步骤 1：克隆项目
 
 ```bash
 git clone https://github.com/jean3690/agent-flow.git
-cd AgentFlow
+cd agent-flow
 ```
 
 #### 步骤 2：配置数据库
@@ -451,7 +540,7 @@ MINIO_SECRET_KEY=your_secret_key
 
 ```bash
 cd backend
-./mvnw spring-boot:run
+mvn spring-boot:run          # 需 JDK 21；仓库中没有 Maven Wrapper
 ```
 
 ✅ 后端服务启动成功后，您将看到：
@@ -505,8 +594,8 @@ npm run dev
 
 #### 步骤 6：访问应用
 
-- 后端端口在 [application.yml](/Users/itwanger/Documents/GitHub/AgentFlow/backend/src/main/resources/application.yml#L1) 中配置，当前默认值是 `8084`
-- 前端通过 Vite 环境变量 `VITE_API_BASE_URL` 连接后端，默认示例见 [`frontend/.env.example`](/Users/itwanger/Documents/GitHub/AgentFlow/frontend/.env.example)
+- 后端端口在 [`backend/src/main/resources/application.yml`](./backend/src/main/resources/application.yml) 中配置，当前默认值是 `8084`
+- 前端通过 Vite 环境变量 `VITE_API_BASE_URL` 连接后端，默认示例见 [`frontend/.env.example`](./frontend/.env.example)
 - 前端不能直接读取 Spring Boot 的 `application.yml`，所以如果后端端口变化，需要同步调整 `frontend/.env.local`
 
 ### 🎬 快速演示
@@ -596,11 +685,12 @@ npm run dev
 
 | 文档类型 | 文档链接 | 说明 |
 |---------|---------|------|
-| 📖 使用指南 | [USER_GUIDE.md](./USER_GUIDE.md) | 详细使用说明和最佳实践 |
-| 📊 开发进度 | [PROGRESS.md](./PROGRESS.md) | 项目开发阶段和完成情况 |
-| 📝 项目总结 | [SUMMARY.md](./SUMMARY.md) | 技术选型和实现总结 |
-| 📋 完成报告 | [PROJECT_COMPLETION_REPORT.md](./PROJECT_COMPLETION_REPORT.md) | 项目交付报告 |
-| 🏗️ 架构设计 | [mermaid.md](./mermaid.md) | 系统架构可视化图表 |
+| 📖 使用指南 | [docs/USER_GUIDE.md](./docs/USER_GUIDE.md) | 详细使用说明和最佳实践 |
+| 📊 开发进度 | [docs/PROGRESS.md](./docs/PROGRESS.md) | 项目开发阶段和完成情况 |
+| 📝 项目总结 | [docs/SUMMARY.md](./docs/SUMMARY.md) | 技术选型和实现总结 |
+| 📋 完成报告 | [docs/PROJECT_COMPLETION_REPORT.md](./docs/PROJECT_COMPLETION_REPORT.md) | 项目交付报告 |
+| 🧩 Agent Plan 集成 | [docs/agent-plan-harness-integration-plan.md](./docs/agent-plan-harness-integration-plan.md) | 联网搜索、记忆与 RAG 集成方案 |
+| 🐍 Python 后端 | [python-backend/README.md](./python-backend/README.md) | FastAPI 实现、Docker 部署与兼容性说明 |
 | 🤖 开发指南 | [AGENTS.md](./AGENTS.md) | AI Agent 开发指引 |
 
 ## 🔧 核心功能详解
@@ -793,7 +883,7 @@ const customNode = {
 
 - 📬 **GitHub Issues**：[问题反馈和功能建议](https://github.com/jean3690/agent-flow/issues)
 - 💭 **GitHub Discussions**：[技术讨论和经验分享](https://github.com/jean3690/agent-flow/discussions)
-- 📖 **官方文档**：查看 [USER_GUIDE.md](./USER_GUIDE.md) 获取完整使用指南
+- 📖 **官方文档**：查看 [USER_GUIDE.md](./docs/USER_GUIDE.md) 获取完整使用指南
 
 ### 联系方式
 
