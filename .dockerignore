@@ -1,0 +1,12 @@
+.git
+.gitignore
+**/.venv
+**/__pycache__
+**/*.pyc
+frontend/node_modules
+frontend/dist
+backend/target
+python-backend/tests/smoke.db
+python-backend/audio_output
+audio_output
+*.log
