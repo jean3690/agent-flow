@@ -1,4 +1,4 @@
-# PaiAgent 使用指南
+# AgentFlow 使用指南
 
 ## 快速开始
 
@@ -15,8 +15,8 @@
 ```bash
 # 1. 创建数据库
 mysql -u root -p
-CREATE DATABASE paiagent DEFAULT CHARACTER SET utf8mb4;
-USE paiagent;
+CREATE DATABASE agent_flow DEFAULT CHARACTER SET utf8mb4;
+USE agent_flow;
 
 # 2. 导入表结构
 SOURCE backend/src/main/resources/schema.sql;
@@ -217,7 +217,7 @@ VALUES ('my_node', '自定义节点', 'TOOL', '🔧');
 ### 目录结构
 
 ```
-PaiAgent-one/
+AgentFlow/
 ├── backend/              # Spring Boot 后端
 │   ├── src/main/java/   # Java 源码
 │   ├── src/main/resources/  # 配置文件

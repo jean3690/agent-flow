@@ -16,7 +16,7 @@ from .minio_client import minio_service
 from .skills import skill_registry
 from .tools import ToolContext, get_required_tool, get_tools
 
-logger = logging.getLogger("paiagent.executors")
+logger = logging.getLogger("agentflow.executors")
 
 Progress = Optional[Callable[[str, Any], None]]
 FENCE = chr(96) * 3
@@ -567,7 +567,7 @@ class ReActExecutor(AbstractAgentPlanExecutor):
 
     def _build_system_prompt(self, node_data: dict, config: dict, available_tools: list) -> str:
         parts = [
-            "你是一个运行在 PaiAgent 工作流节点里的 ReAct Agent。\n",
+            "你是一个运行在 AgentFlow 工作流节点里的 ReAct Agent。\n",
             "你必须通过 JSON 决策进行工具调用或给出最终答案，不要输出 Markdown 代码块。\n",
             "不要暴露完整隐藏推理链，只在 reasoningSummary 字段给一句简短行动理由。\n\n",
         ]
@@ -1106,7 +1106,7 @@ class WebFetchExecutor(AbstractAgentPlanExecutor):
             for url in re.split(r"[,，\n\s]+", urls_text):
                 if not url.strip():
                     continue
-                response = client.get(url.strip(), headers={"User-Agent": "PaiAgent-one/1.0"})
+                response = client.get(url.strip(), headers={"User-Agent": "AgentFlow/1.0"})
                 text = response.text[:8000]
                 pages.append({"url": url.strip(), "content": text})
                 content_parts.append(f"URL: {url.strip()}\n{text}\n\n")

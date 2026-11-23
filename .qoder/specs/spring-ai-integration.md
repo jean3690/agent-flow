@@ -2,7 +2,7 @@
 
 ## 目标
 
-将Spring AI 1.1.2集成到PaiAgent项目中，重构现有的LLM通信方式，减少重复代码，支持流式输出。
+将Spring AI 1.1.2集成到AgentFlow项目中，重构现有的LLM通信方式，减少重复代码，支持流式输出。
 
 ## 用户选择
 
@@ -80,7 +80,7 @@ Spring AI ChatClient/ChatModel
 
 ### 步骤1: 新增 PromptTemplateService
 
-**路径**: `backend/src/main/java/com/paiagent/engine/llm/PromptTemplateService.java`
+**路径**: `backend/src/main/java/com/agentflow/engine/llm/PromptTemplateService.java`
 
 **职责**:
 - 从DeepSeekNodeExecutor:46-87迁移参数映射和模板替换逻辑
@@ -89,7 +89,7 @@ Spring AI ChatClient/ChatModel
 
 ### 步骤2: 新增 ChatClientFactory
 
-**路径**: `backend/src/main/java/com/paiagent/engine/llm/ChatClientFactory.java`
+**路径**: `backend/src/main/java/com/agentflow/engine/llm/ChatClientFactory.java`
 
 **核心功能**:
 ```java
@@ -109,7 +109,7 @@ public ChatClient createClient(String nodeType, String apiUrl, String apiKey,
 
 ### 步骤3: 新增 AbstractLLMNodeExecutor
 
-**路径**: `backend/src/main/java/com/paiagent/engine/executor/impl/AbstractLLMNodeExecutor.java`
+**路径**: `backend/src/main/java/com/agentflow/engine/executor/impl/AbstractLLMNodeExecutor.java`
 
 **核心流程**:
 ```java
@@ -200,17 +200,17 @@ public class QwenNodeExecutor extends AbstractLLMNodeExecutor {
 
 ### 新增文件 (4个)
 
-1. `backend/src/main/java/com/paiagent/engine/llm/ChatClientFactory.java`
-2. `backend/src/main/java/com/paiagent/engine/llm/PromptTemplateService.java`
-3. `backend/src/main/java/com/paiagent/engine/llm/LLMNodeConfig.java` (配置DTO)
-4. `backend/src/main/java/com/paiagent/engine/executor/impl/AbstractLLMNodeExecutor.java`
+1. `backend/src/main/java/com/agentflow/engine/llm/ChatClientFactory.java`
+2. `backend/src/main/java/com/agentflow/engine/llm/PromptTemplateService.java`
+3. `backend/src/main/java/com/agentflow/engine/llm/LLMNodeConfig.java` (配置DTO)
+4. `backend/src/main/java/com/agentflow/engine/executor/impl/AbstractLLMNodeExecutor.java`
 
 ### 修改文件 (4个)
 
 1. `backend/pom.xml` - 添加Spring AI依赖
-2. `backend/src/main/java/com/paiagent/engine/executor/impl/OpenAINodeExecutor.java` - 继承基类
-3. `backend/src/main/java/com/paiagent/engine/executor/impl/DeepSeekNodeExecutor.java` - 继承基类
-4. `backend/src/main/java/com/paiagent/engine/executor/impl/QwenNodeExecutor.java` - 继承基类
+2. `backend/src/main/java/com/agentflow/engine/executor/impl/OpenAINodeExecutor.java` - 继承基类
+3. `backend/src/main/java/com/agentflow/engine/executor/impl/DeepSeekNodeExecutor.java` - 继承基类
+4. `backend/src/main/java/com/agentflow/engine/executor/impl/QwenNodeExecutor.java` - 继承基类
 
 ### 无需修改
 
@@ -232,7 +232,7 @@ spring:
       base-url: https://api.openai.com
 
 # 禁用自动配置，因为我们使用动态创建
-paiagent:
+agentflow:
   llm:
     default-temperature: 0.7
 ```

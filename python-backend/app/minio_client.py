@@ -10,7 +10,7 @@ import httpx
 
 from .settings import settings
 
-logger = logging.getLogger("paiagent.minio")
+logger = logging.getLogger("agentflow.minio")
 
 
 class MinioService:

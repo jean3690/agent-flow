@@ -1,4 +1,4 @@
-# PaiAgent Python 后端
+# AgentFlow Python 后端
 
 这是现有 Spring Boot 后端（`backend/`）的 Python 重写版本，使用 FastAPI + SQLAlchemy 实现，默认监听 **8084** 端口，接口路径、请求体、`{code,message,data}` 响应结构、JWT/刷新令牌与 SSE 事件格式均与 Java 版保持一致，现有 React 前端无需改动。
 
@@ -56,17 +56,26 @@ docker compose --profile full up -d --build
 | --- | --- | --- |
 | 后端 API | http://localhost:8084 | Swagger: /docs |
 | 前端 | http://localhost:5173 | 仅 `--profile full` 启动 |
-| MySQL | localhost:13306 | root / `paiagent123`（可用 `MYSQL_ROOT_PASSWORD` 覆盖） |
+| MySQL | localhost:13306 | root / `agentflow123`（可用 `MYSQL_ROOT_PASSWORD` 覆盖） |
 | Redis | localhost:16379 | 刷新令牌 |
 | 对象存储 S3 API | http://localhost:19000 | 默认 RustFS |
 | 对象存储控制台 | http://localhost:19001 | 默认 minioadmin / minioadmin |
 
 说明：
 
-- 首次启动时若 `paiagent` 库为空，会自动执行镜像内的 `schema.sql`，表结构、索引、JSON/MEDIUMTEXT 字段与 Java 版一致。
+- 首次启动时若 `agent_flow` 库为空，会自动执行镜像内的 `schema.sql`，表结构、索引、JSON/MEDIUMTEXT 字段与 Java 版一致。
 - 当前环境的 Docker 镜像源拒绝拉取 `minio/minio`，因此默认使用 S3 兼容的 `rustfs/rustfs`。可拉取 MinIO 时通过 `OBJECT_STORAGE_IMAGE=minio/minio:latest docker compose up -d` 替换；注意 MinIO 需要把环境变量改为 `MINIO_ROOT_USER/MINIO_ROOT_PASSWORD`。
 - 常用命令：`docker compose logs -f backend`、`docker compose ps`、`docker compose down`。`docker compose down -v` 会删除数据库、Redis 与对象存储数据。
 - 默认管理员仍为 `admin/admin123`，部署到公网前请通过 `APP_AUTH_DEFAULT_PASSWORD`、`JWT_SECRET` 覆盖。
+
+## 从旧版本升级
+
+本次为完全切换，不保留旧标识：
+
+- 数据库名改为 `agent_flow`；已有数据可通过 `mysqldump` 导出后导入新库。
+- 环境变量前缀改为 `AGENTFLOW_`（如 `AGENTFLOW_DATABASE_URL`、`AGENTFLOW_AUTO_MIGRATE`）。
+- 对象存储 bucket 改为 `agent-flow`；Docker 项目名与容器名统一为 `agent-flow-*`。
+- JWT 密钥与刷新令牌不兼容旧版本，升级后需要重新登录。
 
 ## 配置
 
@@ -75,14 +84,14 @@ docker compose --profile full up -d --build
 | 变量 | 说明 | 默认 |
 | --- | --- | --- |
 | `SERVER_PORT` | 服务端口 | 8084 |
-| `MYSQL_HOST/PORT/DATABASE/USERNAME/PASSWORD` | MySQL 连接 | localhost/3306/paiagent/root/空 |
+| `MYSQL_HOST/PORT/DATABASE/USERNAME/PASSWORD` | MySQL 连接 | localhost/3306/agent_flow/root/空 |
 | `REDIS_HOST/PORT/PASSWORD` | 刷新令牌存储 | localhost/6379/空 |
 | `JWT_SECRET` | JWT 密钥；留空时本地自动生成临时密钥 | 空 |
 | `APP_AUTH_DEFAULT_USERNAME/PASSWORD` | 默认管理员账户，留空则禁用 | admin/admin123 |
-| `MINIO_ENDPOINT/ACCESS_KEY/SECRET_KEY/BUCKET_NAME/PUBLIC_URL` | 对象存储 | localhost:9000 / minioadmin / paiagent |
+| `MINIO_ENDPOINT/ACCESS_KEY/SECRET_KEY/BUCKET_NAME/PUBLIC_URL` | 对象存储 | localhost:9000 / minioadmin / agent-flow |
 | `SKILLS_PATH` | Skill 目录，默认复用 `backend/src/main/resources/skills` | 自动探测 |
-| `PAIAGENT_AUTO_MIGRATE` | 是否自动建表/写入节点定义 | true |
-| `PAIAGENT_DATABASE_URL` | 直接指定 SQLAlchemy URL（测试可用 SQLite） | 空 |
+| `AGENTFLOW_AUTO_MIGRATE` | 是否自动建表/写入节点定义 | true |
+| `AGENTFLOW_DATABASE_URL` | 直接指定 SQLAlchemy URL（测试可用 SQLite） | 空 |
 | `MCP_UVX_PATH` | `uvx` 可执行文件路径 | uvx |
 
 TTS、图片/视频生成依赖 MinIO 与对应云服务；MCP 联网搜索依赖本机 `uvx`（`mcp-server-askecho-search-infinity`）。

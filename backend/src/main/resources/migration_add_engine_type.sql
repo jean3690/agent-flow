@@ -2,7 +2,7 @@
 -- 执行日期: 2026-01-27
 -- 用途: 支持 LangGraph4j 引擎选择
 
-USE paiagent;
+USE agent_flow;
 
 -- 1. 添加 engine_type 列，默认值为 'dag' 确保向后兼容
 ALTER TABLE workflow 

@@ -25,7 +25,7 @@ const MainPage = () => {
     <div className="min-h-screen bg-gray-100">
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-900">PaiAgent - AI Agent 流图执行面板</h1>
+          <h1 className="text-2xl font-bold text-gray-900">AgentFlow - AI Agent 流图执行面板</h1>
           <div className="flex items-center gap-4">
             <span className="text-gray-700">欢迎, {username}</span>
             <button

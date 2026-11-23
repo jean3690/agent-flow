@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from .models import NodeDefinition
 
-logger = logging.getLogger("paiagent.seed")
+logger = logging.getLogger("agentflow.seed")
 
 _NODE_DEFINITIONS = [
     (

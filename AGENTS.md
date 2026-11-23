@@ -4,7 +4,7 @@ This file provides guidance to Qoder (qoder.com) when working with code in this 
 
 ## Project Overview
 
-PaiAgent-one is an enterprise-grade AI workflow orchestration platform with visual flow editor. It uses a custom DAG (Directed Acyclic Graph) engine to execute workflows composed of LLM nodes (OpenAI, DeepSeek, Qwen) and tool nodes (TTS, etc.).
+AgentFlow is an enterprise-grade AI workflow orchestration platform with visual flow editor. It uses a custom DAG (Directed Acyclic Graph) engine to execute workflows composed of LLM nodes (OpenAI, DeepSeek, Qwen) and tool nodes (TTS, etc.).
 
 ## Build & Development Commands
 
@@ -47,7 +47,7 @@ mysql -u root -p < backend/src/main/resources/schema.sql
 
 ## Architecture
 
-### Backend Structure (`backend/src/main/java/com/paiagent/`)
+### Backend Structure (`backend/src/main/java/com/agentflow/`)
 
 **Core DAG Engine (`engine/`):**
 - `WorkflowEngine.java`: Main orchestration engine that executes workflows end-to-end

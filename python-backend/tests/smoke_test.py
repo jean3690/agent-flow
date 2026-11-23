@@ -10,8 +10,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 DB_PATH = Path(__file__).resolve().parent / "smoke.db"
 if DB_PATH.exists():
     DB_PATH.unlink()
-os.environ["PAIAGENT_DATABASE_URL"] = "sqlite:///" + str(DB_PATH)
-os.environ["PAIAGENT_AUTO_MIGRATE"] = "true"
+os.environ["AGENTFLOW_DATABASE_URL"] = "sqlite:///" + str(DB_PATH)
+os.environ["AGENTFLOW_AUTO_MIGRATE"] = "true"
 os.environ.setdefault("APP_AUTH_DEFAULT_USERNAME", "admin")
 os.environ.setdefault("APP_AUTH_DEFAULT_PASSWORD", "admin123")
 
@@ -120,7 +120,7 @@ with client:
     response = client.post(
         f"/api/knowledge-bases/{base_id}/documents/text",
         headers=headers,
-        json={"title": "doc", "content": "PaiAgent 是一个工作流编排平台。输入节点会把用户输入传给下游。"},
+        json={"title": "doc", "content": "AgentFlow 是一个工作流编排平台。输入节点会把用户输入传给下游。"},
     )
     document = response.json()["data"]
     check("import knowledge text", response.json()["code"] == 200 and document["charCount"] > 0)

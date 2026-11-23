@@ -1,6 +1,6 @@
 <div align="center">
 
-# PaiAgent
+# AgentFlow
 
 **企业级 AI 工作流可视化编排平台**
 
@@ -23,11 +23,11 @@
 
 ## 📖 项目简介
 
-PaiAgent 是一个**企业级的 AI 工作流可视化编排平台**，让 AI 能力的组合和调度变得简单高效。通过直观的拖拽式界面，开发者和业务人员都能快速构建复杂的 AI 处理流程，无需编写代码即可实现多种大模型的协同工作。
+AgentFlow 是一个**企业级的 AI 工作流可视化编排平台**，让 AI 能力的组合和调度变得简单高效。通过直观的拖拽式界面，开发者和业务人员都能快速构建复杂的 AI 处理流程，无需编写代码即可实现多种大模型的协同工作。
 
-![PaiAgent架构](https://cdn.tobebetterjavaer.com/paicoding/README-20576c3dc7944a46b135996af79ffa59.png)
+![AgentFlow架构](https://cdn.tobebetterjavaer.com/paicoding/README-20576c3dc7944a46b135996af79ffa59.png)
 
-![PaiAgent工作流绘制](https://cdn.paicoding.com/stutymore/agent-plan-paiagent-20260516222134.png)
+![AgentFlow工作流绘制](https://cdn.paicoding.com/stutymore/agent-plan-paiagent-20260516222134.png)
 
 ![SSE实时反馈](image/README-6e538662bb834dbcad888ef065d28bea.png)
 
@@ -35,7 +35,7 @@ PaiAgent 是一个**企业级的 AI 工作流可视化编排平台**，让 AI �
 
 ![Harness体现](https://cdn.paicoding.com/stutymore/harness-engineering-review-20260331170106.png)
 
-### 💡 为什么选择 PaiAgent？
+### 💡 为什么选择 AgentFlow？
 
 - **🎯 零代码编排**：可视化拖拽界面，无需编程即可构建复杂 AI 工作流
 - **🚀 双引擎驱动**：自研 DAG 引擎 + LangGraph4j 状态图引擎，按需切换，兼顾简洁与复杂场景
@@ -55,7 +55,7 @@ PaiAgent 是一个**企业级的 AI 工作流可视化编排平台**，让 AI �
 
 第一期我更新了五篇教程，有想学习的同学可以跟着这个项目冲。
 
-- [搭建PaiAgent脚手架](https://paicoding.com/column/14/1)
+- [搭建AgentFlow脚手架](https://paicoding.com/column/14/1)
 - [节点配置](https://paicoding.com/column/14/2)
 - [LLM节点开发](https://paicoding.com/column/14/3)
 - [超拟人音频节点](https://paicoding.com/column/14/4)
@@ -282,10 +282,10 @@ PaiAgent 是一个**企业级的 AI 工作流可视化编排平台**，让 AI �
 ## 📁 项目结构
 
 ```
-PaiAgent-one/
+AgentFlow/
 ├── backend/                      # Spring Boot 后端服务
 │   ├── src/main/
-│   │   ├── java/com/paiagent/
+│   │   ├── java/com/agentflow/
 │   │   │   ├── engine/          # 🎯 工作流引擎（核心）
 │   │   │   │   ├── WorkflowEngine.java       # 工作流编排引擎
 │   │   │   │   ├── EngineSelector.java       # 双引擎路由选择器
@@ -389,8 +389,8 @@ PaiAgent-one/
 #### 步骤 1：克隆项目
 
 ```bash
-git clone https://github.com/yourusername/PaiAgent-one.git
-cd PaiAgent-one
+git clone https://github.com/jean3690/agent-flow.git
+cd AgentFlow
 ```
 
 #### 步骤 2：配置数据库
@@ -402,13 +402,13 @@ mysql -u root -p
 ```
 
 ```sql
-CREATE DATABASE paiagent DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE agent_flow DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
 **2.2 导入初始化脚本**
 
 ```bash
-mysql -u root -p paiagent < backend/src/main/resources/schema.sql
+mysql -u root -p agent_flow < backend/src/main/resources/schema.sql
 ```
 
 **2.3 配置数据库连接（环境变量方式）**
@@ -432,7 +432,7 @@ MYSQL_PASSWORD=your_strong_password_here
 MYSQL_HOST=localhost
 MYSQL_PORT=3306
 MYSQL_USERNAME=root
-MYSQL_DATABASE=paiagent
+MYSQL_DATABASE=agent_flow
 
 # JWT 密钥（生产环境必须修改！）
 JWT_SECRET=your_jwt_secret_key_minimum_32_characters
@@ -456,7 +456,7 @@ cd backend
 
 ✅ 后端服务启动成功后，您将看到：
 ```
-Started PaiAgentApplication in X.XXX seconds
+Started AgentFlowApplication in X.XXX seconds
 ```
 
 后端服务地址：`http://localhost:8084`（可在 `.env` 中通过 `SERVER_PORT` 修改）
@@ -505,8 +505,8 @@ npm run dev
 
 #### 步骤 6：访问应用
 
-- 后端端口在 [application.yml](/Users/itwanger/Documents/GitHub/PaiAgent-one/backend/src/main/resources/application.yml#L1) 中配置，当前默认值是 `8084`
-- 前端通过 Vite 环境变量 `VITE_API_BASE_URL` 连接后端，默认示例见 [`frontend/.env.example`](/Users/itwanger/Documents/GitHub/PaiAgent-one/frontend/.env.example)
+- 后端端口在 [application.yml](/Users/itwanger/Documents/GitHub/AgentFlow/backend/src/main/resources/application.yml#L1) 中配置，当前默认值是 `8084`
+- 前端通过 Vite 环境变量 `VITE_API_BASE_URL` 连接后端，默认示例见 [`frontend/.env.example`](/Users/itwanger/Documents/GitHub/AgentFlow/frontend/.env.example)
 - 前端不能直接读取 Spring Boot 的 `application.yml`，所以如果后端端口变化，需要同步调整 `frontend/.env.local`
 
 ### 🎬 快速演示
@@ -748,7 +748,7 @@ const customNode = {
 
 ## 💼 项目亮点（简历版）
 
-**项目名称**：PaiAgent - 企业级 AI 工作流编排平台
+**项目名称**：AgentFlow - 企业级 AI 工作流编排平台
 
 **项目描述**：基于可视化流程编辑器的 AI Agent 工作流平台，支持用户通过拖拽方式编排多种大模型（DeepSeek、通义千问等）和工具节点，使用自研 DAG 引擎按拓扑顺序执行工作流，实现复杂 AI 任务的自动化编排与执行。
 
@@ -791,8 +791,8 @@ const customNode = {
 
 ### 获取帮助
 
-- 📬 **GitHub Issues**：[问题反馈和功能建议](https://github.com/yourusername/PaiAgent-one/issues)
-- 💭 **GitHub Discussions**：[技术讨论和经验分享](https://github.com/yourusername/PaiAgent-one/discussions)
+- 📬 **GitHub Issues**：[问题反馈和功能建议](https://github.com/jean3690/agent-flow/issues)
+- 💭 **GitHub Discussions**：[技术讨论和经验分享](https://github.com/jean3690/agent-flow/discussions)
 - 📖 **官方文档**：查看 [USER_GUIDE.md](./USER_GUIDE.md) 获取完整使用指南
 
 ### 联系方式
@@ -814,6 +814,6 @@ const customNode = {
 
 **如果这个项目对您有帮助，请点击 ⭐ Star 支持我们！**
 
-[⬆ 回到顶部](#paiagent-one)
+[⬆ 回到顶部](#agentflow)
 
 </div>

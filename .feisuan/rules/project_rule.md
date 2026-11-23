@@ -1,11 +1,11 @@
 
-# PaiAgent 开发规范指南
+# AgentFlow 开发规范指南
 
 为保证代码质量、可维护性、安全性与可扩展性，请在开发过程中严格遵循以下规范。
 
 ## 一、项目环境与配置
 
-- **工作目录**：`/Users/itwanger/Documents/GitHub/PaiAgent-one`
+- **工作目录**：`/Users/itwanger/Documents/GitHub/AgentFlow`
 - **作者**：itwanger
 - **操作系统**：Mac OS X
 - **工具链**：Maven
@@ -32,11 +32,11 @@
 项目采用前后端分离架构，后端基于 Maven 多模块结构。
 
 ```text
-PaiAgent-one/
+AgentFlow/
 ├── backend/
 │   ├── src/
 │   │   ├── main/
-│   │   │   ├── java/com/paiagent/
+│   │   │   ├── java/com/agentflow/
 │   │   │   │   ├── common/          # 公共工具类
 │   │   │   │   ├── config/          # 配置类 (Redis, JWT, MinIO等)
 │   │   │   │   ├── controller/      # 控制器层
@@ -73,7 +73,7 @@ PaiAgent-one/
 | **Controller** | 处理 HTTP 请求与响应，定义 API 接口 | 不得直接访问数据库或复杂逻辑，必须通过 Service 层调用；返回 DTO 对象                 |
 | **Service**    | 实现业务逻辑、事务管理与数据校验   | 使用 `@Transactional` 管理事务；调用 Mapper 层操作数据库；返回 VO 或 DTO           |
 | **Mapper**     | 数据库访问与持久化操作             | 继承 `BaseMapper`；XML 映射文件位于 `resources/mapper/` 目录下                      |
-| **Entity**     | 映射数据库表结构                   | 包名统一为 `com.paiagent.entity`；使用 Lombok 简化代码；字段需符合驼峰命名映射     |
+| **Entity**     | 映射数据库表结构                   | 包名统一为 `com.agentflow.entity`；使用 Lombok 简化代码；字段需符合驼峰命名映射     |
 | **Engine**     | 核心 AI 逻辑与图编排               | 位于 `engine` 包下；使用 LangGraph4j 进行状态图编排；需处理 LLM 调用与状态管理     |
 
 ### 接口与实现分离

@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 from .db import first_text, format_dt, jdump, jload, now, text_or_none, to_int
 from .models import McpToolConfig
 
-logger = logging.getLogger("paiagent.mcp")
+logger = logging.getLogger("agentflow.mcp")
 
 AGENT_PLAN_WEB_SEARCH = "agent_plan_web_search"
 WEB_SEARCH_TOOL_NAME = "web_search"
@@ -300,7 +300,7 @@ class McpSession:
             {
                 "protocolVersion": "2024-11-05",
                 "capabilities": {},
-                "clientInfo": {"name": "PaiAgent-one", "version": "0.1.0"},
+                "clientInfo": {"name": "AgentFlow", "version": "0.1.0"},
             },
             INITIALIZE_TIMEOUT,
         )

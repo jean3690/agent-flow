@@ -3,7 +3,7 @@
 ## 📋 文档信息
 - **创建时间**: 2026-01-26
 - **设计负责人**: Design Agent
-- **项目版本**: PaiAgent v1.0
+- **项目版本**: AgentFlow v1.0
 - **设计状态**: 待审核
 
 ---
@@ -315,11 +315,11 @@ sequenceDiagram
 **职责**：定义工作流引擎的统一接口，屏蔽底层实现差异
 
 ```java
-package com.paiagent.engine;
+package com.agentflow.engine;
 
-import com.paiagent.dto.ExecutionEvent;
-import com.paiagent.dto.ExecutionResponse;
-import com.paiagent.entity.Workflow;
+import com.agentflow.dto.ExecutionEvent;
+import com.agentflow.dto.ExecutionResponse;
+import com.agentflow.entity.Workflow;
 
 import java.util.function.Consumer;
 
@@ -374,11 +374,11 @@ public interface WorkflowExecutor {
 **职责**：根据工作流配置动态选择合适的引擎
 
 ```java
-package com.paiagent.engine;
+package com.agentflow.engine;
 
 import com.alibaba.fastjson2.JSON;
-import com.paiagent.engine.model.WorkflowConfig;
-import com.paiagent.entity.Workflow;
+import com.agentflow.engine.model.WorkflowConfig;
+import com.agentflow.entity.Workflow;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -478,7 +478,7 @@ public class EngineSelector {
 **职责**：LangGraph 的状态载体，贯穿整个执行流程
 
 ```java
-package com.paiagent.engine.langgraph;
+package com.agentflow.engine.langgraph;
 
 import lombok.Data;
 
@@ -582,11 +582,11 @@ public class WorkflowState {
 **职责**：将 WorkflowConfig 转换为 LangGraph StateGraph
 
 ```java
-package com.paiagent.engine.langgraph;
+package com.agentflow.engine.langgraph;
 
-import com.paiagent.engine.model.WorkflowConfig;
-import com.paiagent.engine.model.WorkflowEdge;
-import com.paiagent.engine.model.WorkflowNode;
+import com.agentflow.engine.model.WorkflowConfig;
+import com.agentflow.engine.model.WorkflowEdge;
+import com.agentflow.engine.model.WorkflowNode;
 import lombok.extern.slf4j.Slf4j;
 import org.bsc.langgraph4j.StateGraph;
 import org.bsc.langgraph4j.action.NodeAction;
@@ -718,12 +718,12 @@ public class GraphBuilder {
 **职责**：将现有 NodeExecutor 包装成 LangGraph NodeAction
 
 ```java
-package com.paiagent.engine.langgraph;
+package com.agentflow.engine.langgraph;
 
-import com.paiagent.dto.ExecutionEvent;
-import com.paiagent.engine.executor.NodeExecutor;
-import com.paiagent.engine.executor.NodeExecutorFactory;
-import com.paiagent.engine.model.WorkflowNode;
+import com.agentflow.dto.ExecutionEvent;
+import com.agentflow.engine.executor.NodeExecutor;
+import com.agentflow.engine.executor.NodeExecutorFactory;
+import com.agentflow.engine.model.WorkflowNode;
 import lombok.extern.slf4j.Slf4j;
 import org.bsc.langgraph4j.action.NodeAction;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -859,11 +859,11 @@ public class NodeAdapter {
 **职责**：初始化状态、配置 MemorySaver、持久化执行记录
 
 ```java
-package com.paiagent.engine.langgraph;
+package com.agentflow.engine.langgraph;
 
 import com.alibaba.fastjson2.JSON;
-import com.paiagent.dto.ExecutionResponse;
-import com.paiagent.entity.ExecutionRecord;
+import com.agentflow.dto.ExecutionResponse;
+import com.agentflow.entity.ExecutionRecord;
 import lombok.extern.slf4j.Slf4j;
 import org.bsc.langgraph4j.checkpoint.MemorySaver;
 import org.springframework.stereotype.Component;
@@ -958,16 +958,16 @@ public class StateManager {
 **职责**：LangGraph 执行引擎的主入口
 
 ```java
-package com.paiagent.engine.langgraph;
+package com.agentflow.engine.langgraph;
 
 import com.alibaba.fastjson2.JSON;
-import com.paiagent.dto.ExecutionEvent;
-import com.paiagent.dto.ExecutionResponse;
-import com.paiagent.engine.WorkflowExecutor;
-import com.paiagent.engine.model.WorkflowConfig;
-import com.paiagent.entity.ExecutionRecord;
-import com.paiagent.entity.Workflow;
-import com.paiagent.mapper.ExecutionRecordMapper;
+import com.agentflow.dto.ExecutionEvent;
+import com.agentflow.dto.ExecutionResponse;
+import com.agentflow.engine.WorkflowExecutor;
+import com.agentflow.engine.model.WorkflowConfig;
+import com.agentflow.entity.ExecutionRecord;
+import com.agentflow.entity.Workflow;
+import com.agentflow.mapper.ExecutionRecordMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.bsc.langgraph4j.CompiledGraph;
 import org.bsc.langgraph4j.StateGraph;
@@ -1308,7 +1308,7 @@ class LangGraphIntegrationTest {
   - `langgraph4j-core-jdk8:1.1.5`
   - `langgraph4j-spring-ai:1.8.0-beta3`
 - [ ] **1.2** 创建包结构
-  - `com.paiagent.engine.langgraph`（新包）
+  - `com.agentflow.engine.langgraph`（新包）
 - [ ] **1.3** 创建核心模型类
   - `WorkflowState.java`
   - `WorkflowState.NodeOutput.java`
@@ -1498,7 +1498,7 @@ class LangGraphIntegrationTest {
 ### 12.1 关键代码路径
 
 ```
-backend/src/main/java/com/paiagent/
+backend/src/main/java/com/agentflow/
 ├── engine/
 │   ├── WorkflowExecutor.java          (新增接口)
 │   ├── WorkflowEngine.java            (修改：实现接口)

@@ -8,10 +8,10 @@
     <version>3.4.1</version>
     <relativePath></relativePath>
   </parent>
-  <groupId>com.paiagent</groupId>
-  <artifactId>paiagent-backend</artifactId>
+  <groupId>com.agentflow</groupId>
+  <artifactId>agentflow-backend</artifactId>
   <version>0.0.1-SNAPSHOT</version>
-  <name>PaiAgent</name>
+  <name>AgentFlow</name>
   <description>AI Agent Workflow Platform Backend</description>
   <url></url>
   <licenses>

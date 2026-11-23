@@ -13,7 +13,7 @@ from . import llm_config_service
 from .db import first_text, text_or_none, to_float, to_int
 from .minio_client import minio_service
 
-logger = logging.getLogger("paiagent.tts")
+logger = logging.getLogger("agentflow.tts")
 
 QWEN_MAX_TTS_INPUT_LENGTH = 400
 QWEN_MAX_TTS_INPUT_BYTES = 600

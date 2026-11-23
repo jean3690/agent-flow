@@ -7,7 +7,7 @@ from typing import Optional
 
 from .settings import settings
 
-logger = logging.getLogger("paiagent.skills")
+logger = logging.getLogger("agentflow.skills")
 
 FRONTMATTER_RE = re.compile(r"^---\s*\n([\s\S]*?)\n---\s*\n([\s\S]*)$")
 SAFE_REFERENCE_NAME = re.compile(r"^[a-zA-Z0-9._-]+$")

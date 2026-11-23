@@ -2,7 +2,7 @@
 
 ## 📋 任务概览
 
-**项目名称**: PaiAgent LangGraph4j 集成  
+**项目名称**: AgentFlow LangGraph4j 集成  
 **总预估时间**: 12-17 天  
 **优先级**: P0 (核心功能)  
 **负责人**: 待分配
@@ -50,12 +50,12 @@
 **操作步骤**:
 ```bash
 # 创建新包
-mkdir -p src/main/java/com/paiagent/engine/langgraph
+mkdir -p src/main/java/com/agentflow/engine/langgraph
 ```
 
 **文件结构**:
 ```
-com.paiagent.engine.langgraph/
+com.agentflow.engine.langgraph/
 ├── WorkflowState.java           (待创建)
 ├── GraphBuilder.java            (待创建)
 ├── NodeAdapter.java             (待创建)
@@ -73,7 +73,7 @@ com.paiagent.engine.langgraph/
 
 **预估时间**: 1-2 小时
 
-**文件**: `src/main/java/com/paiagent/engine/langgraph/WorkflowState.java`
+**文件**: `src/main/java/com/agentflow/engine/langgraph/WorkflowState.java`
 
 **实现要点**:
 ```java
@@ -116,7 +116,7 @@ public class WorkflowState {
 
 **预估时间**: 1 小时
 
-**文件**: `src/test/java/com/paiagent/engine/langgraph/LangGraphBasicTest.java`
+**文件**: `src/test/java/com/agentflow/engine/langgraph/LangGraphBasicTest.java`
 
 **测试代码**:
 ```java
@@ -157,7 +157,7 @@ class LangGraphBasicTest {
 
 **预估时间**: 1 小时
 
-**文件**: `src/main/java/com/paiagent/engine/WorkflowExecutor.java`
+**文件**: `src/main/java/com/agentflow/engine/WorkflowExecutor.java`
 
 **实现要点**:
 ```java
@@ -189,7 +189,7 @@ public interface WorkflowExecutor {
 
 **预估时间**: 30 分钟
 
-**文件**: `src/main/java/com/paiagent/engine/WorkflowEngine.java`
+**文件**: `src/main/java/com/agentflow/engine/WorkflowEngine.java`
 
 **修改内容**:
 ```java
@@ -218,7 +218,7 @@ public class WorkflowEngine implements WorkflowExecutor {
 
 **预估时间**: 3-4 小时
 
-**文件**: `src/main/java/com/paiagent/engine/EngineSelector.java`
+**文件**: `src/main/java/com/agentflow/engine/EngineSelector.java`
 
 **实现要点**:
 ```java
@@ -257,7 +257,7 @@ public class EngineSelector {
 
 **预估时间**: 2 小时
 
-**文件**: `src/main/java/com/paiagent/controller/ExecutionController.java`
+**文件**: `src/main/java/com/agentflow/controller/ExecutionController.java`
 
 **修改前**:
 ```java
@@ -297,7 +297,7 @@ public Result<ExecutionResponse> executeWorkflow(...) {
 
 **预估时间**: 2 小时
 
-**文件**: `src/test/java/com/paiagent/engine/EngineSelectorTest.java`
+**文件**: `src/test/java/com/agentflow/engine/EngineSelectorTest.java`
 
 **测试用例**:
 ```java
@@ -350,7 +350,7 @@ class EngineSelectorTest {
 
 **预估时间**: 3 小时
 
-**文件**: `src/main/java/com/paiagent/engine/langgraph/StateManager.java`
+**文件**: `src/main/java/com/agentflow/engine/langgraph/StateManager.java`
 
 **实现要点**:
 ```java
@@ -386,7 +386,7 @@ public class StateManager {
 
 **预估时间**: 4-5 小时
 
-**文件**: `src/main/java/com/paiagent/engine/langgraph/NodeAdapter.java`
+**文件**: `src/main/java/com/agentflow/engine/langgraph/NodeAdapter.java`
 
 **实现要点**:
 ```java
@@ -439,7 +439,7 @@ public class NodeAdapter {
 
 **预估时间**: 4-5 小时
 
-**文件**: `src/main/java/com/paiagent/engine/langgraph/GraphBuilder.java`
+**文件**: `src/main/java/com/agentflow/engine/langgraph/GraphBuilder.java`
 
 **实现要点**:
 ```java
@@ -483,9 +483,9 @@ public class GraphBuilder {
 **预估时间**: 3-4 小时
 
 **文件**:
-- `src/test/java/com/paiagent/engine/langgraph/StateManagerTest.java`
-- `src/test/java/com/paiagent/engine/langgraph/NodeAdapterTest.java`
-- `src/test/java/com/paiagent/engine/langgraph/GraphBuilderTest.java`
+- `src/test/java/com/agentflow/engine/langgraph/StateManagerTest.java`
+- `src/test/java/com/agentflow/engine/langgraph/NodeAdapterTest.java`
+- `src/test/java/com/agentflow/engine/langgraph/GraphBuilderTest.java`
 
 **测试内容**:
 
@@ -557,7 +557,7 @@ void testAutoDetectEntryAndExitNodes() throws Exception {
 
 **预估时间**: 5-6 小时
 
-**文件**: `src/main/java/com/paiagent/engine/langgraph/LangGraphWorkflowEngine.java`
+**文件**: `src/main/java/com/agentflow/engine/langgraph/LangGraphWorkflowEngine.java`
 
 **实现要点**:
 ```java
@@ -618,7 +618,7 @@ public class LangGraphWorkflowEngine implements WorkflowExecutor {
 
 **预估时间**: 2-3 小时
 
-**文件**: `src/main/java/com/paiagent/engine/langgraph/LangGraphWorkflowEngine.java`
+**文件**: `src/main/java/com/agentflow/engine/langgraph/LangGraphWorkflowEngine.java`
 
 **实现要点**:
 ```java
@@ -657,7 +657,7 @@ if (eventCallback != null) {
 
 **预估时间**: 2 小时
 
-**文件**: `src/main/java/com/paiagent/engine/langgraph/LangGraphWorkflowEngine.java`
+**文件**: `src/main/java/com/agentflow/engine/langgraph/LangGraphWorkflowEngine.java`
 
 **实现要点**:
 ```java
@@ -683,7 +683,7 @@ executionRecordMapper.insert(failedRecord);
 
 **预估时间**: 2-3 小时
 
-**文件**: `src/main/java/com/paiagent/engine/langgraph/LangGraphWorkflowEngine.java`
+**文件**: `src/main/java/com/agentflow/engine/langgraph/LangGraphWorkflowEngine.java`
 
 **边界情况**:
 1. 空工作流（无节点）
@@ -709,7 +709,7 @@ executionRecordMapper.insert(failedRecord);
 
 **预估时间**: 4-5 小时
 
-**文件**: `src/test/java/com/paiagent/engine/langgraph/LangGraphIntegrationTest.java`
+**文件**: `src/test/java/com/agentflow/engine/langgraph/LangGraphIntegrationTest.java`
 
 **测试用例**:
 ```java
@@ -806,7 +806,7 @@ class LangGraphIntegrationTest {
 
 **预估时间**: 2-3 小时
 
-**文件**: `src/test/java/com/paiagent/engine/EngineIntegrationTest.java`
+**文件**: `src/test/java/com/agentflow/engine/EngineIntegrationTest.java`
 
 **测试用例**:
 ```java
@@ -879,7 +879,7 @@ class EngineIntegrationTest {
 4. 验证前端无需改动
 
 **文件**:
-- `src/test/java/com/paiagent/PaiAgentApplicationTests.java`
+- `src/test/java/com/agentflow/AgentFlowApplicationTests.java`
 - 其他已有测试类
 
 **测试清单**:
@@ -1003,7 +1003,7 @@ class EngineIntegrationTest {
 
 **预估时间**: 2 小时
 
-**文件**: `src/main/java/com/paiagent/controller/ExecutionController.java`
+**文件**: `src/main/java/com/agentflow/controller/ExecutionController.java`
 
 **更新 Swagger 注释**:
 ```java
@@ -1074,7 +1074,7 @@ public Result<ExecutionResponse> executeWorkflow(...) { ... }
 
 **预估时间**: 3-4 小时
 
-**文件**: `src/test/java/com/paiagent/benchmark/EngineBenchmarkTest.java`
+**文件**: `src/test/java/com/agentflow/benchmark/EngineBenchmarkTest.java`
 
 **测试内容**:
 ```java
@@ -1183,7 +1183,7 @@ class EngineBenchmarkTest {
 
 **预估时间**: 2-3 小时
 
-**文件**: `src/main/java/com/paiagent/engine/langgraph/LangGraphWorkflowEngine.java`
+**文件**: `src/main/java/com/agentflow/engine/langgraph/LangGraphWorkflowEngine.java`
 
 **关键日志记录点**:
 ```java
@@ -1240,7 +1240,7 @@ log.error("LangGraph 引擎执行失败 - workflowId: {}, error: {}", workflow.g
 
 ### 新增文件 (13 个)
 ```
-src/main/java/com/paiagent/engine/
+src/main/java/com/agentflow/engine/
 ├── WorkflowExecutor.java                              (接口)
 ├── EngineSelector.java                                (选择器)
 └── langgraph/
@@ -1250,7 +1250,7 @@ src/main/java/com/paiagent/engine/
     ├── StateManager.java                              (状态管理器)
     └── LangGraphWorkflowEngine.java                   (核心引擎)
 
-src/test/java/com/paiagent/
+src/test/java/com/agentflow/
 ├── engine/
 │   ├── EngineSelectorTest.java                        (单元测试)
 │   ├── EngineIntegrationTest.java                     (集成测试)
@@ -1275,8 +1275,8 @@ docs/
 ### 修改文件 (3 个)
 ```
 pom.xml                                                (添加依赖)
-src/main/java/com/paiagent/engine/WorkflowEngine.java (实现接口)
-src/main/java/com/paiagent/controller/ExecutionController.java (使用选择器)
+src/main/java/com/agentflow/engine/WorkflowEngine.java (实现接口)
+src/main/java/com/agentflow/controller/ExecutionController.java (使用选择器)
 ```
 
 ---

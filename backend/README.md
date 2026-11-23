@@ -1,4 +1,4 @@
-# PaiAgent Backend
+# AgentFlow Backend
 
 AI Agent 流图执行面板后端服务
 
@@ -65,7 +65,7 @@ export JWT_SECRET=your_jwt_secret
 
 `.env` 会在启动时自动导入；如果你是从仓库根目录运行，也会自动读取 `backend/.env`。
 
-或使用 IDE 运行 `PaiAgentApplication.java`
+或使用 IDE 运行 `AgentFlowApplication.java`
 
 已内置 `spring-boot-devtools`，开发时修改代码并触发编译后，应用会自动热重启。
 
@@ -111,7 +111,7 @@ APP_AUTH_DEFAULT_PASSWORD=admin123
 ## 项目结构
 
 ```
-src/main/java/com/paiagent/
+src/main/java/com/agentflow/
 ├── common/           # 通用类
 ├── config/           # 配置类
 ├── controller/       # 控制器

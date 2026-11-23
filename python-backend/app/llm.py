@@ -7,7 +7,7 @@ from typing import Any, Callable, Optional
 
 import httpx
 
-logger = logging.getLogger("paiagent.llm")
+logger = logging.getLogger("agentflow.llm")
 
 CHAT_COMPLETIONS_SUFFIX = "/v1/chat/completions"
 V1_SUFFIX = "/v1"

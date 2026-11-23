@@ -1331,7 +1331,7 @@ const EditorPage = () => {
         <div className="workflow-title-group">
           <div className="workflow-brand-mark">P</div>
           <div>
-            <div className="workflow-brand">PaiAgent</div>
+            <div className="workflow-brand">AgentFlow</div>
             <Input
               value={workflowName}
               onChange={(e) => setWorkflowName(e.target.value)}

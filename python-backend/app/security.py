@@ -11,7 +11,7 @@ import jwt
 
 from .settings import settings
 
-logger = logging.getLogger("paiagent.auth")
+logger = logging.getLogger("agentflow.auth")
 
 ACCESS_TOKEN_TYPE = "access"
 REFRESH_TOKEN_PREFIX = "auth:refresh:"

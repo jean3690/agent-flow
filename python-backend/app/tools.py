@@ -12,7 +12,7 @@ from . import agent_plan, knowledge, mcp
 from .db import first_text, to_float, to_int
 from .skills import skill_registry
 
-logger = logging.getLogger("paiagent.tools")
+logger = logging.getLogger("agentflow.tools")
 
 MAX_PAGE_CHARS = 8000
 
@@ -165,7 +165,7 @@ class WebFetchTool(AgentTool):
         content_parts: list[str] = []
         with httpx.Client(timeout=httpx.Timeout(20.0, connect=8.0), follow_redirects=True) as client:
             for url in urls:
-                response = client.get(url, headers={"User-Agent": "PaiAgent-one/1.0"})
+                response = client.get(url, headers={"User-Agent": "AgentFlow/1.0"})
                 text = response.text
                 truncated = text[:MAX_PAGE_CHARS]
                 pages.append({"url": url, "content": truncated})

@@ -29,7 +29,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
 )
-logger = logging.getLogger("paiagent")
+logger = logging.getLogger("agentflow")
 
 EXCLUDED_PATHS = {
     "/api/auth/login",
@@ -159,7 +159,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="PaiAgent API", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="AgentFlow API", version="1.0.0", lifespan=lifespan)
 
 @app.middleware("http")
 async def auth_middleware(request: Request, call_next):

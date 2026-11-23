@@ -17,7 +17,7 @@ from .db import first_text, jdump, text_or_none, to_float, to_int
 from .llm import normalize_provider
 from .models import LLMGlobalConfig
 
-logger = logging.getLogger("paiagent.agent_plan")
+logger = logging.getLogger("agentflow.agent_plan")
 
 DEFAULT_EMBEDDING_MODEL = "doubao-embedding-vision"
 

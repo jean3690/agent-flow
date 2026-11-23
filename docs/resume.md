@@ -1,4 +1,4 @@
-## 项目名称：PaiAgent - 企业级 AI 工作流可视化编排平台
+## 项目名称：AgentFlow - 企业级 AI 工作流可视化编排平台
 
 **项目介绍**：基于 LangGraph4j + Spring AI 的企业级 AI 工作流平台，支持通过可视化拖拽界面编排多种大模型（OpenAI、DeepSeek、通义千问）和工具节点，使用 DAG 引擎按拓扑顺序执行复杂 AI 任务，实现零代码构建 AI Agent 应用。
 
@@ -6,7 +6,7 @@
 
 **核心职责**：
 
-项目名称：PaiAgent - 企业级 AI 工作流可视化编排平台
+项目名称：AgentFlow - 企业级 AI 工作流可视化编排平台
 
 **项目介绍**：基于 LangGraph4j + Spring AI 的企业级 AI 工作流平台，支持通过可视化拖拽界面编排多种大模型（OpenAI、DeepSeek、通义千问）和工具节点，使用 DAG 引擎按拓扑顺序执行复杂 AI 任务，实现零代码构建 AI Agent 应用。
 

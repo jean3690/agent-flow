@@ -1,8 +1,8 @@
-# PaiAgent-one 接入火山方舟 Agent Plan + Harness 执行计划
+# AgentFlow 接入火山方舟 Agent Plan + Harness 执行计划
 
 ## Summary
 
-目标：把火山方舟 Agent Plan 接成 PaiAgent-one 的统一 Agent 能力配置。用户配置一次 Agent Plan 后，工作流可复用语言模型、联网搜索、记忆召回、图片生成、视频生成、向量/RAG，并让 ReAct Agent 按需调用这些能力。
+目标：把火山方舟 Agent Plan 接成 AgentFlow 的统一 Agent 能力配置。用户配置一次 Agent Plan 后，工作流可复用语言模型、联网搜索、记忆召回、图片生成、视频生成、向量/RAG，并让 ReAct Agent 按需调用这些能力。
 
 关键说明需要在产品和文档中明确体现：
 

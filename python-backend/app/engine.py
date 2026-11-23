@@ -12,7 +12,7 @@ from . import events, executors
 from .db import first_text, jdump, jload, now, text_or_none
 from .models import ExecutionRecord, ExecutionSnapshot, ExecutionVariable
 
-logger = logging.getLogger("paiagent.engine")
+logger = logging.getLogger("agentflow.engine")
 
 EventCallback = Optional[Callable[[dict], None]]
 

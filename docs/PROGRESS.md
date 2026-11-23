@@ -1,4 +1,4 @@
-# PaiAgent 项目开发进度
+# AgentFlow 项目开发进度
 
 ## ✅ 已完成
 
@@ -174,7 +174,7 @@
 ### 后端
 ```
 backend/
-├── src/main/java/com/paiagent/
+├── src/main/java/com/agentflow/
 │   ├── common/              # 通用类 (Result)
 │   ├── config/              # 配置类 (MyMetaObjectHandler, WebConfig)
 │   ├── controller/          # 控制器 (AuthController)
@@ -183,7 +183,7 @@ backend/
 │   ├── interceptor/         # 拦截器 (AuthInterceptor)
 │   ├── mapper/              # MyBatis Mapper (WorkflowMapper, ...)
 │   ├── service/             # 服务层 (AuthService)
-│   └── PaiAgentApplication.java
+│   └── AgentFlowApplication.java
 ├── src/main/resources/
 │   ├── schema.sql           # 数据库初始化脚本
 │   └── application.yml      # 应用配置

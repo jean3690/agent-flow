@@ -1,4 +1,4 @@
-# PaiAgent 项目最终完成报告
+# AgentFlow 项目最终完成报告
 
 ## 🎉 项目完成情况
 
@@ -92,7 +92,7 @@
 
 **目录结构**:
 ```
-backend/src/main/java/com/paiagent/
+backend/src/main/java/com/agentflow/
 ├── common/         # 通用类
 ├── config/         # 配置类
 ├── controller/     # 控制器 (4个)
@@ -258,7 +258,7 @@ npm run dev
 
 ### 实现真实的 OpenAI 调用
 
-修改 `backend/src/main/java/com/paiagent/engine/executor/impl/OpenAINodeExecutor.java`:
+修改 `backend/src/main/java/com/agentflow/engine/executor/impl/OpenAINodeExecutor.java`:
 
 ```java
 @Override

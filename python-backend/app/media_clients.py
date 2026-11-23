@@ -9,7 +9,7 @@ import httpx
 from .agent_plan import ResolvedAgentPlanConfig
 from .db import first_text
 
-logger = logging.getLogger("paiagent.media")
+logger = logging.getLogger("agentflow.media")
 
 STEP_IMAGE_EDIT_2 = "step-image-edit-2"
 STEP_2X_LARGE = "step-2x-large"

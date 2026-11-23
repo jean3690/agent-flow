@@ -18,7 +18,7 @@ from ..result import error, success
 from ..security import auth_service
 from ..serializers import execution_response, snapshot_to_dict, variable_to_dict
 
-logger = logging.getLogger("paiagent.executions")
+logger = logging.getLogger("agentflow.executions")
 
 router = APIRouter(prefix="/api/workflows", tags=["工作流执行接口"])
 

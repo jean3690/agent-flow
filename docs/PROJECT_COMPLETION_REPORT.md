@@ -1,8 +1,8 @@
-# PaiAgent 项目完成报告
+# AgentFlow 项目完成报告
 
 ## 一、项目概述
 
-**项目名称**: PaiAgent - AI Agent 流图执行面板  
+**项目名称**: AgentFlow - AI Agent 流图执行面板  
 **项目定位**: 企业级可视化 AI 工作流编排平台  
 **当前版本**: v1.0.0  
 **完成度**: 95%  
@@ -120,7 +120,7 @@
 
 **项目结构**:
 ```
-backend/src/main/java/com/paiagent/
+backend/src/main/java/com/agentflow/
 ├── config/                    # 配置类
 │   ├── CorsConfig.java       # CORS 配置
 │   ├── WebMvcConfig.java     # MVC 配置
@@ -454,10 +454,10 @@ useEffect(() => {
 ```bash
 # 创建数据库
 mysql -u root -p
-CREATE DATABASE paiagent DEFAULT CHARACTER SET utf8mb4;
+CREATE DATABASE agent_flow DEFAULT CHARACTER SET utf8mb4;
 
 # 导入表结构
-mysql -u root -p paiagent < backend/src/main/resources/schema.sql
+mysql -u root -p agent_flow < backend/src/main/resources/schema.sql
 ```
 
 **2. 启动后端**
@@ -609,7 +609,7 @@ VALUES ('translation', '翻译节点', 'TOOL', '🌐');
 
 ## 十二、总结
 
-PaiAgent 项目经过 5 个阶段的完整开发,成功实现了一个功能完整的 AI 工作流编排平台。
+AgentFlow 项目经过 5 个阶段的完整开发,成功实现了一个功能完整的 AI 工作流编排平台。
 
 **核心成就**:
 1. ✅ 完整的前后端分离架构
@@ -635,4 +635,4 @@ PaiAgent 项目经过 5 个阶段的完整开发,成功实现了一个功能完�
 
 **项目完成时间**: 2025-11-23  
 **文档版本**: v1.0  
-**作者**: PaiAgent 开发团队
+**作者**: AgentFlow 开发团队

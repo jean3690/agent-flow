@@ -36,8 +36,8 @@ def _int(name: str, default: int) -> int:
 
 
 WEAK_JWT_SECRETS = {
-    "paiagent-one-jwt-secret-key-change-me-to-a-long-random-string",
-    "paiagent-dev-jwt-secret-key-only-for-development",
+    "agentflow-one-jwt-secret-key-change-me-to-a-long-random-string",
+    "agentflow-dev-jwt-secret-key-only-for-development",
     "secret",
     "password",
     "123456",
@@ -52,7 +52,7 @@ class Settings:
     server_port: int = field(default_factory=lambda: _int("SERVER_PORT", 8084))
     mysql_host: str = field(default_factory=lambda: os.environ.get("MYSQL_HOST", "localhost"))
     mysql_port: int = field(default_factory=lambda: _int("MYSQL_PORT", 3306))
-    mysql_database: str = field(default_factory=lambda: os.environ.get("MYSQL_DATABASE", "paiagent"))
+    mysql_database: str = field(default_factory=lambda: os.environ.get("MYSQL_DATABASE", "agent_flow"))
     mysql_username: str = field(default_factory=lambda: os.environ.get("MYSQL_USERNAME", "root"))
     mysql_password: str = field(default_factory=lambda: os.environ.get("MYSQL_PASSWORD", ""))
 
@@ -69,16 +69,16 @@ class Settings:
     minio_endpoint: str = field(default_factory=lambda: os.environ.get("MINIO_ENDPOINT", "http://localhost:9000"))
     minio_access_key: str = field(default_factory=lambda: os.environ.get("MINIO_ACCESS_KEY", "minioadmin"))
     minio_secret_key: str = field(default_factory=lambda: os.environ.get("MINIO_SECRET_KEY", "minioadmin"))
-    minio_bucket_name: str = field(default_factory=lambda: os.environ.get("MINIO_BUCKET_NAME", "paiagent"))
+    minio_bucket_name: str = field(default_factory=lambda: os.environ.get("MINIO_BUCKET_NAME", "agent-flow"))
     minio_public_url: str = field(default_factory=lambda: os.environ.get("MINIO_PUBLIC_URL", "http://localhost:9000"))
 
     cors_allowed_origin_patterns: str = field(
         default_factory=lambda: os.environ.get("CORS_ALLOWED_ORIGIN_PATTERNS", "http://localhost:*,http://127.0.0.1:*")
     )
     skills_path: str = field(default_factory=lambda: os.environ.get("SKILLS_PATH", ""))
-    auto_migrate: bool = field(default_factory=lambda: os.environ.get("PAIAGENT_AUTO_MIGRATE", "true").lower() != "false")
-    database_url_override: str = field(default_factory=lambda: os.environ.get("PAIAGENT_DATABASE_URL", ""))
-    schema_sql_path: str = field(default_factory=lambda: os.environ.get("PAIAGENT_SCHEMA_SQL", ""))
+    auto_migrate: bool = field(default_factory=lambda: os.environ.get("AGENTFLOW_AUTO_MIGRATE", "true").lower() != "false")
+    database_url_override: str = field(default_factory=lambda: os.environ.get("AGENTFLOW_DATABASE_URL", ""))
+    schema_sql_path: str = field(default_factory=lambda: os.environ.get("AGENTFLOW_SCHEMA_SQL", ""))
 
     def database_url(self) -> str:
         from urllib.parse import quote_plus

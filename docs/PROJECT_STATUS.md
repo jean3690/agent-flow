@@ -1,8 +1,8 @@
-# PaiAgent 项目状态报告
+# AgentFlow 项目状态报告
 
 ## 📋 基本信息
 
-- **项目名称**: PaiAgent - AI Agent 流图执行面板
+- **项目名称**: AgentFlow - AI Agent 流图执行面板
 - **项目版本**: v1.0.0
 - **完成时间**: 2025-11-23
 - **项目状态**: ✅ 已完成
@@ -242,7 +242,7 @@ React 18.3.1 + TypeScript 5.6.2
 
 ```bash
 # 1. 数据库初始化
-mysql -u root -p paiagent < backend/src/main/resources/schema.sql
+mysql -u root -p agent_flow < backend/src/main/resources/schema.sql
 
 # 2. 启动后端 (端口 8080)
 cd backend
@@ -271,7 +271,7 @@ npm run dev
 
 ## 🎊 结论
 
-PaiAgent 项目已成功完成所有核心开发任务,实现了一个功能完整、架构清晰、文档齐全的 AI 工作流编排平台。
+AgentFlow 项目已成功完成所有核心开发任务,实现了一个功能完整、架构清晰、文档齐全的 AI 工作流编排平台。
 
 **关键成就**:
 - ✅ 5 个开发阶段全部完成
