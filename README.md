@@ -17,6 +17,8 @@
 [![Python](https://img.shields.io/badge/Python-3.12+-blue.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009485.svg)](https://fastapi.tiangolo.com/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED.svg)](https://docs.docker.com/compose/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue.svg)](https://www.typescriptlang.org/)
+[![NestJS](https://img.shields.io/badge/NestJS-10.x-e0234e.svg)](https://nestjs.com/)
 
 [快速开始](#-快速开始) • [Docker 部署](#-docker-一键启动推荐) • [功能特性](#-核心特性) • [技术架构](#-技术架构) • [使用文档](./docs/USER_GUIDE.md) • [开发进度](./docs/PROGRESS.md) • [国内AtomGit托管](https://atomgit.com/javabetter/PaiAgent)
 
@@ -28,7 +30,7 @@
 
 AgentFlow 是一个**企业级的 AI 工作流可视化编排平台**，让 AI 能力的组合和调度变得简单高效。通过直观的拖拽式界面，开发者和业务人员都能快速构建复杂的 AI 处理流程，无需编写代码即可实现多种大模型的协同工作。
 
-仓库同时提供 **Java（Spring Boot）** 与 **Python（FastAPI）** 两套后端实现，接口路径、响应结构与 SSE 事件格式完全一致，前端无需改动即可切换。推荐使用 Docker Compose 一键启动整套环境；详见 [python-backend/README.md](./python-backend/README.md)。
+仓库同时提供 **Java（Spring Boot）**、**Python（FastAPI）** 与 **TypeScript（NestJS）** 三套后端实现，接口路径、响应结构与 SSE 事件格式完全一致，前端无需改动即可切换。推荐使用 Docker Compose 一键启动整套环境；详见 [python-backend/README.md](./python-backend/README.md) 与 [ts-backend/README.md](./ts-backend/README.md)。三套后端默认都监听 `8084`，任选其一。
 
 ![AgentFlow架构](https://cdn.tobebetterjavaer.com/paicoding/README-20576c3dc7944a46b135996af79ffa59.png)
 
@@ -275,6 +277,27 @@ AgentFlow 是一个**企业级的 AI 工作流可视化编排平台**，让 AI �
 <td>一键启动基础设施与前后端</td>
 </tr>
 <tr>
+<td rowspan="4"><b>后端（TypeScript 实现）</b></td>
+<td>NestJS</td>
+<td>10.x</td>
+<td>模块化分层，接近 Spring Boot</td>
+</tr>
+<tr>
+<td>TypeORM</td>
+<td>0.3.x</td>
+<td>实体与仓储层</td>
+</tr>
+<tr>
+<td>TypeScript</td>
+<td>5.6</td>
+<td>类型安全的服务端实现</td>
+</tr>
+<tr>
+<td>Node.js</td>
+<td>22+</td>
+<td>运行时（Docker 镜像内置）</td>
+</tr>
+<tr>
 <td rowspan="7"><b>核心引擎</b></td>
 <td>自研 DAG 引擎</td>
 <td>-</td>
@@ -405,6 +428,19 @@ AgentFlow/
 │   ├── Dockerfile               # 后端镜像
 │   ├── docker-compose.yml       # MySQL + Redis + 对象存储 + 后端 + 前端
 │   └── README.md                # Python 后端说明
+
+├── ts-backend/                   # TypeScript NestJS 后端（接口与 Java/Python 版兼容）
+│   ├── src/
+│   │   ├── main.ts              # Nest 启动、CORS、鉴权中间件
+│   │   ├── app.module.ts        # 模块与依赖注入
+│   │   ├── database/            # TypeORM 数据源与实体
+│   │   ├── engine/              # DAG / LangGraph 引擎、执行器、SSE 事件
+│   │   ├── modules/controllers.ts # REST Controller
+│   │   └── services/            # LLM、知识库、MCP、媒体、Skills
+│   ├── tests/smoke.ts           # 23 项冒烟测试（sqljs 内存库）
+│   ├── Dockerfile
+│   ├── docker-compose.yml
+│   └── README.md                # TypeScript 后端说明
 │
 ├── docs/                         # 📚 项目文档
 │   ├── USER_GUIDE.md            # 用户使用指南
@@ -472,6 +508,33 @@ python run.py                      # http://localhost:8084
 ```bash
 python tests/smoke_test.py
 ```
+
+### TypeScript 后端（NestJS）
+
+```bash
+cd ts-backend
+npm install
+npm run build
+npm start                  # http://localhost:8084
+
+# 使用 SQLite 内存库（无需 MySQL）
+DB_TYPE=sqljs npm start
+
+# 冒烟测试：23 项检查，自动拉起 sqljs 版服务
+npm run smoke
+```
+
+Docker 方式（端口与 Python 版错开，可同时运行）：
+
+```bash
+cd ts-backend
+docker compose up -d --build
+docker compose --profile full up -d --build   # 前端 :5174
+```
+
+| MySQL | Redis | 对象存储 |
+|-------|-------|----------|
+| 13307 | 16380 | 19002 / 控制台 19003 |
 
 ### 方式三：本地启动 Java 后端（原有实现）
 
@@ -691,6 +754,7 @@ npm run dev
 | 📋 完成报告 | [docs/PROJECT_COMPLETION_REPORT.md](./docs/PROJECT_COMPLETION_REPORT.md) | 项目交付报告 |
 | 🧩 Agent Plan 集成 | [docs/agent-plan-harness-integration-plan.md](./docs/agent-plan-harness-integration-plan.md) | 联网搜索、记忆与 RAG 集成方案 |
 | 🐍 Python 后端 | [python-backend/README.md](./python-backend/README.md) | FastAPI 实现、Docker 部署与兼容性说明 |
+| 🟦 TypeScript 后端 | [ts-backend/README.md](./ts-backend/README.md) | NestJS + TypeORM 实现、Docker 部署与兼容性说明 |
 | 🤖 开发指南 | [AGENTS.md](./AGENTS.md) | AI Agent 开发指引 |
 
 ## 🔧 核心功能详解

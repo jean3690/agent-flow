@@ -4,6 +4,8 @@
 **/__pycache__
 **/*.pyc
 frontend/node_modules
+ts-backend/node_modules
+ts-backend/dist
 frontend/dist
 backend/target
 python-backend/tests/smoke.db
