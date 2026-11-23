@@ -34,7 +34,7 @@ def _tags(value: Any) -> list[str]:
 
 
 async def _post_internal(ctx: NodeContext, path: str, payload: dict[str, Any]) -> dict[str, Any]:
-    base_url = ctx.settings.java_service_base_url.rstrip("/")
+    base_url = ctx.settings.platform_service_base_url.rstrip("/")
     async with httpx.AsyncClient(timeout=20) as client:
         response = await client.post(
             f"{base_url}{path}",

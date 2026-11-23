@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import asyncio
 
-from fastapi import APIRouter, Header
+from fastapi import APIRouter, Header, HTTPException
 from fastapi.responses import StreamingResponse
 
-from app.api.skills import require_internal
+from app.api.internal_auth import require_internal
 from app.config import get_settings
 from app.core.events import EventBus
 from app.graph.runner import WorkflowRunner
@@ -18,10 +18,15 @@ _RUNNING: dict[str, asyncio.Task] = {}
 
 @router.post("/executions")
 async def execute(request: ExecutionRequest, x_internal_token: str = Header(default="")):
-    if request.mcp_servers:
-        require_internal(x_internal_token)
-    bus = EventBus()
-    runner = WorkflowRunner(request, bus, get_settings())
+    require_internal(x_internal_token)
+    settings = get_settings()
+    if request.run_id and request.run_id in _RUNNING:
+        raise HTTPException(status_code=409, detail="执行 runId 已存在")
+    if len(_RUNNING) >= settings.max_concurrency:
+        raise HTTPException(status_code=503, detail="AI 执行容量已满，请稍后重试")
+    bus = EventBus(max_events=settings.event_buffer_max_events, max_buffer_bytes=settings.event_buffer_max_bytes,
+                   max_event_bytes=settings.event_max_bytes, heartbeat_seconds=settings.event_heartbeat_seconds)
+    runner = WorkflowRunner(request, bus, settings)
     task = asyncio.create_task(runner.run())
     _RUNNING[runner.run_id] = task
 
@@ -51,7 +56,8 @@ async def execute(request: ExecutionRequest, x_internal_token: str = Header(defa
 
 
 @router.post("/executions/{run_id}/cancel")
-async def cancel(run_id: str):
+async def cancel(run_id: str, x_internal_token: str = Header(default="")):
+    require_internal(x_internal_token)
     task = _RUNNING.get(run_id)
     if task is None or task.done():
         return {"data": {"cancelled": False}}

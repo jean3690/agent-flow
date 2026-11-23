@@ -1,4 +1,4 @@
-"""One-use, short-lived tickets for browser live translation via Java's WS bridge."""
+"""One-use, short-lived tickets for browser live translation via the platform WS bridge."""
 from __future__ import annotations
 
 import asyncio
@@ -189,7 +189,7 @@ async def mock_session(browser: WebSocket):
 
 @router.websocket("/realtime/ws")
 async def realtime_ws(browser: WebSocket):
-    # Only the Java bridge can connect; browser uses its one-use ticket, never a vendor key.
+    # Only the platform bridge can connect; browser uses its one-use ticket, never a vendor key.
     try:
         require_internal(browser.headers.get("x-internal-token", ""))
     except HTTPException:

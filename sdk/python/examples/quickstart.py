@@ -2,7 +2,7 @@
 #
 # Prerequisites:
 #   pip install agentflow-sdk   (or run from this folder: pip install -e .)
-#   A running Agent Flow backend (Java on :8084) and a valid API Key.
+#   A running Agent Flow backend (platform service on :8084) and a valid API Key.
 #
 # Set AGENTFLOW_BASE_URL and AGENTFLOW_API_KEY before running:
 #   export AGENTFLOW_BASE_URL=http://127.0.0.1:8084

@@ -17,7 +17,7 @@
         <div>
           <h1>模型服务商</h1>
           <p class="af-muted">
-            Key 只保存在 Java 服务端，执行工作流时下发到 AI 服务，不会回传前端；留空 Key 表示沿用环境变量。
+            Key 只保存在平台服务端，执行工作流时下发到 AI 服务，不会回传前端；留空 Key 表示沿用环境变量。
           </p>
         </div>
         <el-button :loading="loading" @click="load">刷新</el-button>

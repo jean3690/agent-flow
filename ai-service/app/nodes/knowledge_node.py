@@ -15,7 +15,7 @@ from app.schemas.flow import FlowNode
 
 @register
 class KnowledgeNodeExecutor(NodeExecutor):
-    """Retrieve chunks from a knowledge base owned by the Java service."""
+    """Retrieve chunks from a knowledge base owned by the platform service."""
 
     type = "knowledge"
 
@@ -29,7 +29,7 @@ class KnowledgeNodeExecutor(NodeExecutor):
         query = render(config.get("query") or "{{input}}", names, strict=True)
         top_k = int(config.get("topK") or 4)
 
-        base_url = ctx.settings.java_service_base_url.rstrip("/")
+        base_url = ctx.settings.platform_service_base_url.rstrip("/")
         try:
             async with httpx.AsyncClient(timeout=20) as client:
                 response = await client.post(
@@ -71,7 +71,7 @@ class KnowledgeUpsertNodeExecutor(NodeExecutor):
         if not content:
             raise NodeExecutionError(node.id, "知识写入内容不能为空")
 
-        base_url = ctx.settings.java_service_base_url.rstrip("/")
+        base_url = ctx.settings.platform_service_base_url.rstrip("/")
         try:
             async with httpx.AsyncClient(timeout=30) as client:
                 response = await client.post(

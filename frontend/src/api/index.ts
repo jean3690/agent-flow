@@ -1,4 +1,5 @@
 import http from './request'
+import { fetchPlatformFile } from '../utils/protectedFiles'
 import type {
   ExecutionDetail,
   ExecutionSummary,
@@ -138,7 +139,9 @@ export const fileApi = {
   }) => http.post<any, FileItem>('/files/text', payload),
   remove: (name: string) => http.delete<any, FileItem>('/files/' + encodeFilePath(name)),
   url: (name: string, download = false) =>
-    '/api/files/' + encodeFilePath(name) + (download ? '?download=true' : '')
+    '/api/files/' + encodeFilePath(name) + (download ? '?download=true' : ''),
+  blob: (name: string, download = false, signal?: AbortSignal) =>
+    fetchPlatformFile('/api/files/' + encodeFilePath(name) + (download ? '?download=true' : ''), signal)
 }
 
 export const approvalApi = {

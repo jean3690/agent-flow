@@ -16,7 +16,7 @@ from app.schemas.flow import Flow, FlowNode
 def _context(mock_mode: str = "never") -> NodeContext:
     return NodeContext(
         run_id="run-approval",
-        settings=Settings(mock_mode=mock_mode, java_service_base_url="http://java.test",
+        settings=Settings(mock_mode=mock_mode, platform_service_base_url="http://java.test",
                           internal_token="token"),
         flow=Flow(nodes=[], edges=[]),
         bus=EventBus(),

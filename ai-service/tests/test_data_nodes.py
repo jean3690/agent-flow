@@ -339,7 +339,7 @@ def test_every_new_executor_has_identical_declared_output_fields_and_defaults():
 
 
 def test_new_catalog_metadata_exactly_matches_java_and_has_no_duplicate_types():
-    path = Path(__file__).resolve().parents[2] / "java-service/src/main/resources/node-definitions.json"
+    path = Path(__file__).resolve().parents[2] / "platform-service/app/resources/node-definitions.json"
     java = {node["type"]: node for node in json.loads(path.read_text())}
     python = node_catalog()
     assert len(python) == len({node["type"] for node in python})

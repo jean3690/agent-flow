@@ -57,7 +57,7 @@ class HumanApprovalNodeExecutor(NodeExecutor):
                 "auto": True,
             }
 
-        base_url = ctx.settings.java_service_base_url.rstrip("/")
+        base_url = ctx.settings.platform_service_base_url.rstrip("/")
         headers = {"X-Internal-Token": ctx.settings.internal_token}
         workflow_id = int(ctx.workflow_id) if str(ctx.workflow_id or "").isdigit() else None
         payload = {

@@ -1,11 +1,11 @@
 # 服务间契约
 
-Java → Python 的主执行契约是 **提交执行（含 flow）** 与 **回传 SSE 事件**；知识检索期间 Python 也会调用 Java 的内部检索接口，此外还有模型、技能、文件与 embedding 接口。
-本文件是唯一事实来源，改协议必须同步 ai-service/app/schemas/ 与 java-service 的 dto。
+平台服务 → Python 的主执行契约是 **提交执行（含 flow）** 与 **回传 SSE 事件**；知识检索期间 Python 也会调用平台服务的内部检索接口，此外还有模型、技能、文件与 embedding 接口。
+本文件是唯一事实来源，改协议必须同步 ai-service/app/schemas/ 与 platform-service 的 dto。
 
 ## 0. 认证与外部调用
 
-AgentFlow 对外暴露的 REST API 全部以 /api 为前缀，运行在 Java 服务端口（默认 8084），统一返回 { code: 0 表示成功, message, data }。它既可供前端使用，也可被任意外部程序直接调用（作为服务/组件）。
+AgentFlow 对外暴露的 REST API 全部以 /api 为前缀，运行在平台服务端口（默认 8084），统一返回 { code: 0 表示成功, message, data }。它既可供前端使用，也可被任意外部程序直接调用（作为服务/组件）。
 
 认证二选一：
 
@@ -14,7 +14,7 @@ AgentFlow 对外暴露的 REST API 全部以 /api 为前缀，运行在 Java 服
 
 OpenAPI 文档：启动后访问 /swagger-ui.html，机器契约在 /v3/api-docs。
 
-官方 SDK（封装了上面这套认证 + 解包 + 同步/流式执行）：Python `sdk/python`、TypeScript `sdk/typescript`、Java `sdk/java`。各 SDK 的最小调用示例见 README「作为服务调用 → 官方 SDK」。
+官方 SDK（封装了上面这套认证 + 解包 + 同步/流式执行）：Python `sdk/python`、TypeScript `sdk/typescript`。
 
 管理接口（仅 ADMIN）：
 
@@ -28,7 +28,7 @@ OpenAPI 文档：启动后访问 /swagger-ui.html，机器契约在 /v3/api-docs
 
 ```jsonc
 {
-  "id": "12",                       // 可空，Java 侧传入用于埋点
+  "id": "12",                       // 可空，平台侧传入用于埋点
   "name": "内容生产",
   "engineType": "langgraph",        // langgraph | dag（v1 只实现 langgraph）
   "nodes": [
@@ -121,11 +121,11 @@ POST /v1/executions ，Content-Type: application/json ，Accept: text/event-stre
 }
 ```
 
-`providers` 为可选字段：Java 在执行前把前端保存的服务商凭据随请求下发，Python 按「请求覆盖 → 环境变量」的优先级解析，不落盘。`resume` 为断点续跑缓存（Java 由 `resumeRunId` 从节点日志生成，`input` 节点不缓存），命中即跳过该节点执行。`subflows` 为子工作流定义表（workflowId → Flow），Java 会递归内联 `subflow` / `foreach` 引用的已保存工作流，Python 执行时无需回查数据库。响应即为 SSE 流（text/event-stream）。
+`providers` 为可选字段：平台服务在执行前把前端保存的服务商凭据随请求下发，Python 按「请求覆盖 → 环境变量」的优先级解析，不落盘。`resume` 为断点续跑缓存（平台服务由 `resumeRunId` 从节点日志生成，`input` 节点不缓存），命中即跳过该节点执行。`subflows` 为子工作流定义表（workflowId → Flow），平台服务会递归内联 `subflow` / `foreach` 引用的已保存工作流，Python 执行时无需回查数据库。响应即为 SSE 流（text/event-stream）。
 
 ### 3.1 同步执行（对外服务调用推荐）
 
-POST /api/workflows/{id}/run ，Content-Type: application/json 。与 /execute 的区别是它同步返回：Java 内部消费 SSE 流，结束后汇总为 JSON：
+POST /api/workflows/{id}/run ，Content-Type: application/json 。与 /execute 的区别是它同步返回：平台内部消费 SSE 流，结束后汇总为 JSON：
 
     {
       "runId": "9f1c...",
@@ -156,7 +156,7 @@ POST /api/workflows/{id}/run ，Content-Type: application/json 。与 /execute �
 
 output 取最后执行的 output 节点的 value；没有 output 节点时回退到最后执行节点的可提取值。run_finished 的 outputs 字段另行包含按节点 ID 索引的输出集合。
 
-Java 与 SDK 按 UTF-8 增量读取，兼容 LF / CRLF / CR、注释、默认 message 事件与多行 data（以换行连接）；为避免漏掉终态事件，也容忍最后一个事件未以空行结尾。HTTP 失败、业务响应失败与工作流 run_failed 是不同层次的错误：调用方需分别处理。
+平台服务与 SDK 按 UTF-8 增量读取，兼容 LF / CRLF / CR、注释、默认 message 事件与多行 data（以换行连接）；为避免漏掉终态事件，也容忍最后一个事件未以空行结尾。HTTP 失败、业务响应失败与工作流 run_failed 是不同层次的错误：调用方需分别处理。
 
 ## 5. 其他接口
 
@@ -175,7 +175,7 @@ Java 与 SDK 按 UTF-8 增量读取，兼容 LF / CRLF / CR、注释、默认 me
 
 ## 6. 服务商凭据（前端可配置）
 
-前端 → Java（`/api/llm-providers`，走登录鉴权），元数据由 ai-service 的 providers 注册表提供：
+前端 → 平台服务（`/api/llm-providers`，走登录鉴权），元数据由 ai-service 的 providers 注册表提供：
 
 | 方法 | 路径 | 用途 |
 | --- | --- | --- |
@@ -183,13 +183,13 @@ Java 与 SDK 按 UTF-8 增量读取，兼容 LF / CRLF / CR、注释、默认 me
 | PUT | /api/llm-providers/{provider} | 保存 Key / 自定义 Base URL；`apiKey` 留空表示沿用已保存值，`baseUrl` 留空表示回退默认 |
 | DELETE | /api/llm-providers/{provider} | 清除已保存凭据 |
 | POST | /api/llm-providers/{provider}/test | 测试连接，可传临时 `apiKey`/`baseUrl` |
-| GET | /api/llm-providers/{provider}/models | 拉取该服务商实际可用模型；query 不含任何凭据，Java 内部用 POST+JSON 把已保存的明文 Key 下发给 ai-service |
+| GET | /api/llm-providers/{provider}/models | 拉取该服务商实际可用模型；query 不含任何凭据，平台内部用 POST+JSON 把已保存的明文 Key 下发给 ai-service |
 
-存储：`llm_provider_config`（Java 库）。执行时 Java 查表并注入提交请求的 `providers` 字段；Python 仅在内存中使用，不回写、不写日志。环境变量作为兜底，DB 配置优先。
+存储：`llm_provider_config`（平台数据库）。执行时 平台服务查表并注入提交请求的 `providers` 字段；Python 仅在内存中使用，不回写、不写日志。环境变量作为兜底，DB 配置优先。
 
 ## 7. 知识库
 
-Java 持有知识库、文档与分片；embedding 由 ai-service 计算，检索打分在 Java 侧完成。
+平台服务持有知识库、文档与分片；embedding 由 ai-service 计算，检索打分在 平台侧完成。
 
 | 方法 | 路径 | 用途 |
 | --- | --- | --- |
@@ -210,12 +210,12 @@ Java 持有知识库、文档与分片；embedding 由 ai-service 计算，检�
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
 | POST | /v1/embeddings（ai-service） | 入参 provider/model/input/apiKey?/baseUrl?；返回 vectors/model/mock。无 Key 时返回确定性 mock 向量 |
-| POST | /internal/knowledge/search（Java） | 供 knowledge 节点执行期调用，头 `X-Internal-Token` 校验，入参 knowledgeBaseId/query/topK |
-| POST | /internal/approvals（Java） | 供 human_approval 节点创建待办，入参 runId/workflowId/nodeId/userId/title/content/expiresInSeconds |
-| GET | /internal/approvals/{id}（Java） | 供 human_approval 节点轮询审批状态 |
-| POST | /internal/knowledge/upsert（Java） | 供 knowledge_upsert 节点调用；同知识库同标题覆盖，写入后同步分片 + embedding 建索引 |
-| POST | /internal/memory/write（Java） | 供 memory_write 节点调用，入参 workflowId/userId/scope/memoryType/content/tags/sourceNodeId/provider/model |
-| POST | /internal/memory/search（Java） | 供 memory_retrieve 节点调用，入参 workflowId/userId/scope/query/topK/tags/provider/model |
+| POST | /internal/knowledge/search（平台服务） | 供 knowledge 节点执行期调用，头 `X-Internal-Token` 校验，入参 knowledgeBaseId/query/topK |
+| POST | /internal/approvals（平台服务） | 供 human_approval 节点创建待办，入参 runId/workflowId/nodeId/userId/title/content/expiresInSeconds |
+| GET | /internal/approvals/{id}（平台服务） | 供 human_approval 节点轮询审批状态 |
+| POST | /internal/knowledge/upsert（平台服务） | 供 knowledge_upsert 节点调用；同知识库同标题覆盖，写入后同步分片 + embedding 建索引 |
+| POST | /internal/memory/write（平台服务） | 供 memory_write 节点调用，入参 workflowId/userId/scope/memoryType/content/tags/sourceNodeId/provider/model |
+| POST | /internal/memory/search（平台服务） | 供 memory_retrieve 节点调用，入参 workflowId/userId/scope/query/topK/tags/provider/model |
 
 打分：真实 embedding 用余弦相似度；mock 或 embedding 不可用时退化为字符 bigram + IDF 的覆盖率打分（零分片段会被过滤）。
 
@@ -232,15 +232,18 @@ Java 持有知识库、文档与分片；embedding 由 ai-service 计算，检�
 
 执行准备（凭据、子工作流及续跑缓存）失败时不会插入 RUNNING 记录。异步线程池拒绝任务返回 HTTP 503 / code 5030，记录收尾为 FAILED。禁止删除运行中记录，返回 HTTP 409 / code 4090；请先取消并等待终态。取消排队任务后，该任务出队时不会向 AI 服务提交执行。上游异常中断时，未完成节点会随运行收尾为 FAILED 或 CANCELED。
 
-取消链路：Java 通知 ai-service `POST /v1/executions/{runId}/cancel` 终止 LangGraph 任务，同时关闭上游 SSE 流；记录状态置为 `CANCELED`，耗时按实际执行时长回填。前端调试面板的「停止」也会调用该接口。
+取消链路：平台服务通知 ai-service `POST /v1/executions/{runId}/cancel` 终止 LangGraph 任务，同时关闭上游 SSE 流；记录状态置为 `CANCELED`，耗时按实际执行时长回填。前端调试面板的「停止」也会调用该接口。
 
 ### 8.1 断点续跑
 
-- `POST /api/workflows/{id}/execute` 请求体新增 `resumeRunId`：指向同工作流的一次失败/取消执行。
-- Java 校验记录归属后，把该次运行中所有 `SUCCESS` 节点的输出（`input` 节点除外）作为 `resume` 缓存随 payload 下发。
-- Python 命中缓存的节点不执行，直接复用上次输出并打 `node_log`「复用上次执行结果（断点续跑）」。
-- 注意：续跑复用的是节点输出快照，不是 LangGraph 持久化 checkpoint；若两次运行的输入或工作流定义不同，缓存节点不会自动失效。需要全量重算时不要传 `resumeRunId`。
+- 同步 `/run` 与流式 `/execute` 都支持 `resumeRunId`，只能指向同工作流已结束且有一致性指纹的失败/取消执行。
+- 平台服务检查用户、输入、实际图及内联子图、下发模型/MCP 配置和请求 mock 选项。不兼容、源记录未结束、历史记录无指纹或可复用输出损坏时，返回 409，不创建新 RUNNING 记录；越权仍返回 404。
+- 缓存只复用类型一致的成功节点，排除 input、失败/未执行节点及其依赖下游；依赖包括分支配置、模板引用和 merge sources。
+- Python 命中缓存直接复用输出（包括空对象），事件增加 `cacheHit: true`。平台服务不重复累计历史 usage 的 token/成本；详情节点返回 `cacheHit`，执行详情返回 `resumeRunId` 来源。
+- 位置/显示名/边 ID/版本计数与整体执行超时不参与身份；修改输入、执行定义或下发配置需完整重跑。运行环境及外部资源变化不在指纹覆盖范围内，仍不等同于持久化 checkpoint 或 exactly-once。
 - 入口：调试面板失败后出现「从失败点续跑」；执行记录详情页失败/取消记录有「去编辑器续跑」。
+
+详细规则与数据库升级见[续跑一致性](execution-resume.md)。
 
 ## 9. 智能体工具
 
@@ -250,7 +253,7 @@ Java 持有知识库、文档与分片；embedding 由 ai-service 计算，检�
 | --- | --- | --- |
 | read_input | 无 | 返回本次运行输入 JSON |
 | load_skill | name | 返回技能正文（三级加载的详情层） |
-| knowledge_search | query, top_k? | 走 Java `/internal/knowledge/search`，节点需挂载 knowledgeBaseId |
+| knowledge_search | query, top_k? | 走 平台服务 `/internal/knowledge/search`，节点需挂载 knowledgeBaseId |
 | web_fetch | url | 抓取公网 http/https 并转纯文本；校验 DNS，拒绝回环/内网/保留地址 |
 | web_search | query, limit? | Tavily 联网搜索，返回标题、链接与摘要；未配置 Key 时返回可读错误 |
 
@@ -261,20 +264,20 @@ Java 持有知识库、文档与分片；embedding 由 ai-service 计算，检�
 - `memory_write`：按 `scope` 写入记忆。`workflow` 只携带 workflowId，`user` 携带 userId，`global` 不限制归属；标签写入前去重并截断到 10 个。
 - `memory_retrieve`：召回上限 20 条，按「向量余弦 + 词法」混合排序；未配置 embedding（provider=mock 或调用失败）时退化为字符 bigram + IDF，零分记录会被过滤。
 - `llm` 节点可选 `memoryScope/memoryTopK/memoryProvider/memoryModel`：执行前按用户提示词召回记忆并拼进系统提示词；召回异常只写 `node_log` 告警，不阻断主流程。
-- 记忆表由 Java 独占，AI 服务只通过 `/internal/memory/*` 读写；执行 payload 会下发 `userId`，子工作流与触发器复用同一归属。
+- 记忆表由平台服务独占，AI 服务只通过 `/internal/memory/*` 读写；执行 payload 会下发 `userId`，子工作流与触发器复用同一归属。
 - 公开管理接口 `GET /api/memories`（可按 scope / workflowId 过滤）与 `DELETE /api/memories/{id}`；非管理员只能看到并删除自己的记忆，全局记忆所有人可读。
 
 ### 9.2 人工审批
 
-- `human_approval` 节点调用 Java `/internal/approvals` 创建待办，随后每 2 秒轮询状态；SSE 连接保持。
+- `human_approval` 节点调用 平台服务 `/internal/approvals` 创建待办，随后每 2 秒轮询状态；SSE 连接保持。
 - 待办状态：`PENDING` / `APPROVED` / `REJECTED` / `EXPIRED`；过期在读取时惰性标记。
-- Java 提交执行时会扫描审批节点，把执行级 `options.timeoutMs` 提升到 `waitSeconds + 30s` 以上。
+- 平台服务提交执行时会扫描审批节点，把执行级 `options.timeoutMs` 提升到 `waitSeconds + 30s` 以上。
 - 公开接口：`GET /api/approvals?status=`、`POST /api/approvals/{id}/decide {approved, comment}`；普通用户仅能处理自己的待办，管理员可处理全部。
 - `AI_MOCK_MODE=always` 或节点 `autoApprove=true` 时不创建待办，直接返回通过；详见 [人工审批](human-approval.md)。
 
 ## 10. 多模态
 
-- `image_generate`：OpenAI 兼容 `/images/generations`；无 Key 或 mock 时生成确定性纯色占位 PNG。产物落在 ai-service 媒体目录，经 `/files/{name}` → Java `/api/files/{name}` 代理访问。
+- `image_generate`：OpenAI 兼容 `/images/generations`；无 Key 或 mock 时生成确定性纯色占位 PNG。产物落在 ai-service 媒体目录，经 `/files/{name}` → 平台服务 `/api/files/{name}` 代理访问。
 - `vision_analyze`：本地 `/files/...` 图片会转成 base64 data URL 再发给多模态模型；mock 模式返回占位分析。
 - 文件代理按扩展名返回 MIME（png/jpeg/webp/gif/svg/mp3/wav）。
 
@@ -285,19 +288,21 @@ Java 持有知识库、文档与分片；embedding 由 ai-service 计算，检�
 
 ## 11. 文件 IO
 
-工作流的文件读写与文件中心共用 ai-service 的本地存储（`AI_FILE_DIR`，留空回退 `AI_OUTPUT_DIR`）。所有对外路径都是存储根目录内的**相对路径**：绝对路径、`..`、空字符一律拒绝，写操作只落在存储根内。
+工作流的文件读写与文件中心共用 ai-service 的存储实现（`AI_FILE_DIR`，留空回退 `AI_OUTPUT_DIR`），但按 `.users/{userId}` 分区。相对路径只在执行用户目录内解析，绝对/越界路径、控制字符与符号链接均拒绝，不回退到共享根。
 
-### 11.1 对外接口（Java `/api/files`）
+### 11.1 对外接口（平台服务 `/api/files`）
 
 | 方法 | 路径 | 用途 |
 | --- | --- | --- |
-| GET | /api/files?prefix=&limit= | 列出文件，按更新时间倒序；prefix 为相对路径前缀 |
+| GET | /api/files?prefix=&limit= | 列出本人文件，按更新时间倒序；管理员可显式选择 ownerUserId 或 legacy=true |
 | POST | /api/files 或 /api/files/upload | multipart 上传，字段 file，可选 name 指定落盘路径 |
 | POST | /api/files/text | 写入文本 { name, content, encoding?, overwrite?, append? } |
-| GET | /api/files/{path} | 下载/预览，匿名可访问；?download=true 触发附件下载 |
+| GET | /api/files/{path} | JWT / API Key 下载；?download=true 触发附件，活动内容强制附件 |
 | DELETE | /api/files/{path} | 删除文件并清理空目录（需登录或 API Key） |
 
-返回的文件元数据统一为 { name, fileName, originalName, path, url, size, contentType, createdAt, updatedAt }，其中 url 形如 `/files/reports/today.md`，可被 `vision_analyze` / `file_read` 直接消费。
+返回元数据为 { name, fileName, originalName, path, url, size, contentType, createdAt, updatedAt }。path 是用户相对路径，url 形如 `/files/users/1/reports/today.md`，同用户节点可直接消费；浏览器带 JWT 获取 Blob 后预览，SDK 下载需继续携带鉴权。无凭证返回 401，普通用户跨目录访问返回 404。Python 文件及执行/取消接口要求内部令牌，存储身份仅由平台服务提供。
+
+管理员历史区只读入口为 `/api/files?legacy=true` 和 `/api/files/legacy/{path}`，不自动迁移旧文件。完整说明见[文件隔离](file-isolation.md)。
 
 ### 11.2 节点行为
 
@@ -355,7 +360,7 @@ Java 持有知识库、文档与分片；embedding 由 ai-service 计算，检�
 
 ### 13.2 子工作流
 
-- `subflow` 节点通过 `workflowId` 引用另一条已保存的工作流；执行前 Java 递归内联其 flow，因此子工作流修改后下一次执行立即生效。
+- `subflow` 节点通过 `workflowId` 引用另一条已保存的工作流；执行前 平台服务递归内联其 flow，因此子工作流修改后下一次执行立即生效。
 - `input` 为 JSON 输入映射，支持模板（如 `{"topic": "{{input.topic}}"}`）；留空则透传父级 input。
 - 输出为 `{ value, output, text, outputs, subflowId, nodeCount, elapsedMs }`，其中 `value/output` 是子流程最终输出。
 - 限制：嵌套最多 5 层、单次执行最多内联 20 条子工作流，存在循环引用时执行前直接报错。
@@ -380,11 +385,13 @@ Java 持有知识库、文档与分片；embedding 由 ai-service 计算，检�
 
 ### 14.1 指标
 
-Java 服务引入 Spring Boot Actuator + Micrometer Prometheus：
+平台服务提供 Prometheus 兼容指标接口：
 
 | 路径 | 用途 |
 | --- | --- |
-| GET /actuator/health | 健康检查（含 liveness / readiness probe） |
+| GET /actuator/health | 聚合健康状态 |
+| GET /actuator/health/liveness | 应用存活，独立于数据库 / AI 依赖 |
+| GET /actuator/health/readiness | 应用就绪 + 数据库 + AI 服务；不可用返回 503 |
 | GET /actuator/metrics | Micrometer 指标列表 |
 | GET /actuator/prometheus | Prometheus 抓取格式 |
 
@@ -395,14 +402,24 @@ Java 服务引入 Spring Boot Actuator + Micrometer Prometheus：
 | agentflow.executions | Counter | status=SUCCESS/FAILED/CANCELED |
 | agentflow.execution.duration | Timer | status |
 | agentflow.executions.running | Gauge | 无 |
+| agentflow.execution.pool.active | Gauge | 无；共用执行线程池活动线程数 |
+| agentflow.execution.pool.queued | Gauge | 无；等待队列长度 |
+| agentflow.execution.rejected | Counter | 无；入队拒绝次数 |
+| agentflow.execution.persistence.failures | Counter | 无；最终收尾持久化失败次数 |
+| agentflow.execution.resume.node.hits | Counter | 无；复用历史节点输出次数 |
+| agentflow.execution.transport.timeouts | Counter | 无；平台上游连接/读取期限超时次数 |
 | agentflow.nodes | Counter | type, status |
 | agentflow.node.duration | Timer | type, status |
 | agentflow.llm.tokens | Counter | model, kind=prompt/completion |
 
+`agentflow.executions.running` 包含排队及尚未完成收尾的执行。同步、SSE 和触发器共用有界线程池，容量饱和返回 503。节点状态转换增量提交；平台服务的 SSE 运行终态及 `done` 在最终收尾后发送，收尾持久化失败改为 `run_failed`，不会先发布 `run_finished`。这不意味着数据库故障期间终态一定已落库。Actuator 指标接口应限制为内网访问。
+
+工作流请求 `timeoutMs` 为 1–3600000ms，默认 120000ms，审批会调整有效预算；平台服务另加上游读取宽限，超时失败事件使用 `RUN_TIMEOUT`。Python 超限事件错误码为 `EVENT_TOO_LARGE` / `EVENT_BUFFER_OVERFLOW`，流中注释心跳不是业务事件。Python 准入饱和返回 503，活动 runId 重复返回 409；平台服务 接收到这些上游拒绝时将已创建执行标记为 FAILED。详见[执行资源保护](execution-protection.md)。
+
 ### 14.2 Token 与成本
 
 - 执行记录新增 prompt_tokens、completion_tokens、total_tokens、cost_usd。
-- Java 从节点输出的 usage 字段汇总（兼容 promptTokens / prompt_tokens / input_tokens 等命名）。
+- 平台服务从节点输出的 usage 字段汇总（兼容 promptTokens / prompt_tokens / input_tokens 等命名）。
 - 成本按模型单价估算，费率在 application.yml 配置：
 
     agentflow:
@@ -418,7 +435,7 @@ Java 服务引入 Spring Boot Actuator + Micrometer Prometheus：
 
 ### 14.3 日志关联
 
-- Java 日志格式追加 [runId:...]，执行线程内通过 MDC 注入，SSE 与同步执行都生效。
+- 平台服务日志格式追加 [runId:...]，执行线程内通过 MDC 注入，SSE 与同步执行都生效。
 - Python 日志通过 ContextVar 注入同一个 runId，便于跨服务串联一次执行。
 
 ## 15. 版本与发布
@@ -442,6 +459,6 @@ Java 服务引入 Spring Boot Actuator + Micrometer Prometheus：
 - `status`：1=草稿（含已发布版本时的草稿编辑态），2=已发布（存在 publishedVersion）；保存草稿不会清除已发布版本。
 ## MCP 与 Skills 扩展
 
-执行请求可携带内部字段 `mcpServers`：`serverId -> {url, headers, allowedTools, timeoutMs}`。该字段由 Java 按当前用户权限、启用状态及根流程 / 子流程引用构建，不由浏览器传入，也不写进工作流快照。携带 MCP 配置的 Python 执行入口要求 `X-Internal-Token`；服务端凭据不能回显到浏览器。
+执行请求可携带内部字段 `mcpServers`：`serverId -> {url, headers, allowedTools, timeoutMs}`。该字段由平台服务按当前用户权限、启用状态及根流程 / 子流程引用构建，不由浏览器传入，也不写进工作流快照。携带 MCP 配置的 Python 执行入口要求 `X-Internal-Token`；服务端凭据不能回显到浏览器。
 
 工作流节点配置：`mcp_tool` 使用 `serverId`、`toolName`、`arguments`；`react_agent` 使用 `mcpServerIds` 与 `skillIds`；`llm` 使用 `skillIds`。技能管理和 MCP 配置的 REST 接口、权限及限制见 [MCP 与 Skills 配置](mcp-skills.md)。

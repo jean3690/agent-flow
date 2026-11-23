@@ -1,4 +1,4 @@
-"""LLM 节点按提示词自动召回长期记忆（Java 内部接口）。"""
+"""LLM 节点按提示词自动召回长期记忆（平台服务内部接口）。"""
 
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ async def retrieve_memory(ctx: NodeContext, *, scope: str, query: str, top_k: in
     if scope not in SCOPES:
         raise ValueError(f"不支持的记忆范围: {scope}")
     workflow_id, user_id = execution_scope(ctx, scope)
-    base_url = ctx.settings.java_service_base_url.rstrip("/")
+    base_url = ctx.settings.platform_service_base_url.rstrip("/")
     async with httpx.AsyncClient(timeout=20) as client:
         response = await client.post(
             f"{base_url}/internal/memory/search",

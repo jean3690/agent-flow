@@ -150,7 +150,7 @@ def main() -> int:
     check("知识检索命中", status == 200 and hits and "退款" in hits[0]["content"],
           json.dumps(hits[:1], ensure_ascii=False)[:160])
 
-    # 知识库节点：通过工作流执行触发 Python→Java 内部检索（RAG 全链路）
+    # 知识库节点：通过工作流执行触发 Python→平台服务内部检索（RAG 全链路）
     knowledge_flow = {
         "nodes": [
             {"id": "in", "type": "input", "name": "输入", "position": {"x": 0, "y": 0},
@@ -543,7 +543,8 @@ def main() -> int:
           f"count={len(items)}")
 
     try:
-        with urllib.request.urlopen(BASE + "/api/files/e2e/hello.md", timeout=30) as response:
+        download_request = urllib.request.Request(BASE + "/api/files/e2e/hello.md", headers={"Authorization": "Bearer " + token})
+        with urllib.request.urlopen(download_request, timeout=30) as response:
             downloaded = response.read().decode("utf-8")
         check("下载文件内容一致", downloaded == "# AgentFlow 文件 IO", downloaded[:60])
     except Exception as error:  # noqa: BLE001

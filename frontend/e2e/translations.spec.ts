@@ -5,7 +5,7 @@ test.use({
   launchOptions: { args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'] }
 })
 
-test('browser microphone reaches the real Java/Python bridge in explicit mock mode', async ({ page }) => {
+test('browser microphone reaches the real platform/Python bridge in explicit mock mode', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', error => errors.push(error.message))
   await page.addInitScript(() => {

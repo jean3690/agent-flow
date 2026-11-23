@@ -141,3 +141,38 @@ test('debug input rejects non-object JSON before submitting an execution', async
   await expect(page.getByText('输入必须是 JSON 对象，例如 {"topic":"主题"}', { exact: true }).first()).toBeVisible()
   expect(requests).toBe(0)
 })
+
+test('an incompatible resume displays the conflict without silently running the full workflow', async ({ page }) => {
+  await mockEditor(page)
+  const requests: any[] = []
+  await page.route('**/api/executions/old-run', async (route) => {
+    await route.fulfill({ json: { code: 0, data: { input: '{"topic":"原始输入"}' } } })
+  })
+  await page.route('**/api/workflows/1/execute', async (route) => {
+    requests.push(route.request().postDataJSON())
+    await route.fulfill({ status: 409, json: { code: 4090, message: '执行输入、工作流定义或运行配置已变化，请完整重跑' } })
+  })
+  await page.goto('/#/editor/1?resume=old-run')
+  await expect(page.locator('.debug__msg').filter({ hasText: '运行配置已变化' })).toBeVisible()
+  await expect(page.locator('.debug').getByRole('button', { name: '运行', exact: true })).toBeEnabled()
+  expect(requests).toEqual([{ input: { topic: '原始输入' }, resumeRunId: 'old-run' }])
+})
+
+test('execution details distinguish cached output and show the resume source', async ({ page }) => {
+  await mockEditor(page)
+  const record = { id: 1, runId: 'resumed-run', workflowId: 1, workflowName: '续跑示例', status: 'SUCCESS',
+    nodeCount: 1, elapsedMs: 1, startedAt: '2026-11-23T10:00:00', totalTokens: 0 }
+  await page.route((url) => url.pathname === '/api/executions', async (route) => {
+    await route.fulfill({ json: { code: 0, data: { records: [record], total: 1 } } })
+  })
+  await page.route('**/api/executions/resumed-run', async (route) => {
+    await route.fulfill({ json: { code: 0, data: { ...record, resumeRunId: 'old-run', nodes: [
+      { nodeId: 't', nodeType: 'template', nodeName: '模板', status: 'SUCCESS', cacheHit: true, elapsedMs: 0, output: '{"text":"cached"}' }
+    ] } } })
+  })
+  await page.goto('/#/executions')
+  await page.getByRole('button', { name: '详情', exact: true }).click()
+  const detail = page.getByRole('dialog')
+  await expect(detail.getByText('复用历史输出', { exact: true })).toBeVisible()
+  await expect(detail.getByText('续跑来源：old-run', { exact: true })).toBeVisible()
+})

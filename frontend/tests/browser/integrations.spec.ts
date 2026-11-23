@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { expect, test, type Page } from '@playwright/test'
 import { mockEditor } from './fixtures'
 
-const definitions = JSON.parse(readFileSync('../java-service/src/main/resources/node-definitions.json', 'utf-8'))
+const definitions = JSON.parse(readFileSync('../platform-service/app/resources/node-definitions.json', 'utf-8'))
 const tools = [{ name:'echo', description:'回声工具', inputSchema:{ type:'object', properties:{ text:{ type:'string' } } } }]
 
 async function mockManagement(page: Page, admin = true) {

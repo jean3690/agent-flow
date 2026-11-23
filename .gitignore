@@ -1,9 +1,3 @@
-# java
-target/
-*.class
-*.jar
-!.mvn/wrapper/maven-wrapper.jar
-
 # python
 __pycache__/
 *.py[cod]

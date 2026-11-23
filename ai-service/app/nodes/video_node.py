@@ -3,13 +3,19 @@ from __future__ import annotations
 import asyncio
 import time
 import uuid
-from pathlib import Path
 from typing import Any
 from urllib.parse import quote
 
 import httpx
 
 from app.core.errors import NodeExecutionError
+from app.core.storage import (
+    is_local_file_reference,
+    media_target,
+    model_image_reference,
+    scoped_relative_path,
+    storage_url,
+)
 from app.core.template import build_names, render
 from app.graph.context import NodeContext
 from app.graph.state import FlowState
@@ -44,15 +50,18 @@ class VideoNodeExecutor(NodeExecutor):
         duration = max(1, min(int(config.get("duration") or 5), 15))
         resolution = str(config.get("resolution") or "").strip()
         ratio = str(config.get("ratio") or "adaptive").strip() or "adaptive"
+        storage = ctx.storage
+        if reference and is_local_file_reference(reference):
+            scoped_relative_path(storage, reference)
 
         if ctx.mock_for(provider):
             filename = f"{uuid.uuid4().hex}.png"
-            target = Path(ctx.settings.audio_dir) / filename
+            target = media_target(storage, filename)
             target.write_bytes(_placeholder_png(prompt))
             ctx.emit("node_log", nodeId=node.id, level="info", message="未配置视频厂商，已生成占位海报")
             return {
                 "videoUrl": "",
-                "posterUrl": f"/files/{filename}",
+                "posterUrl": storage_url(storage, filename),
                 "text": "视频生成需要配置支持视频接口的服务商；当前为占位海报。",
                 "provider": "mock",
                 "model": model,
@@ -61,6 +70,7 @@ class VideoNodeExecutor(NodeExecutor):
             }
 
         api_key, base_url = ctx.credentials(provider)
+        reference = model_image_reference(storage, reference)
         canonical = provider_aliases(provider)
         try:
             if canonical == "agnes":
@@ -78,14 +88,14 @@ class VideoNodeExecutor(NodeExecutor):
             raise NodeExecutionError(node.id, f"视频生成失败: {exc}") from exc
 
         filename = f"{uuid.uuid4().hex}.mp4"
-        target = Path(ctx.settings.audio_dir) / filename
+        target = media_target(storage, filename)
         async with httpx.AsyncClient(timeout=120, follow_redirects=True) as client:
             remote = await client.get(video_url)
             remote.raise_for_status()
             target.write_bytes(remote.content)
 
         return {
-            "videoUrl": f"/files/{filename}",
+            "videoUrl": storage_url(storage, filename),
             "posterUrl": cover_url or "",
             "provider": provider,
             "model": model,

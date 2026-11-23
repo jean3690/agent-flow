@@ -94,6 +94,9 @@
             {{ detail.totalTokens }} tokens · ${{ Number(detail.costUsd || 0).toFixed(6) }}
           </span>
         </div>
+        <div v-if="detail.resumeRunId" class="af-muted">
+          续跑来源：<span class="mono">{{ detail.resumeRunId }}</span>
+        </div>
         <div v-if="detail.errorMessage" class="executions__error">{{ detail.errorMessage }}</div>
 
         <div class="executions__label">输入</div>
@@ -104,6 +107,7 @@
           <div class="executions__node-head">
             <span>{{ node.nodeName }} ({{ node.nodeType }})</span>
             <el-tag size="small" :type="statusType(node.status)">{{ statusText(node.status) }}</el-tag>
+            <el-tag v-if="node.cacheHit" size="small" type="info">复用历史输出</el-tag>
             <span class="af-muted">{{ node.elapsedMs }} ms</span>
           </div>
           <div v-if="node.errorMessage" class="executions__error">{{ node.errorMessage }}</div>

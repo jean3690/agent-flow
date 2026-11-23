@@ -184,6 +184,7 @@ export interface NodeLog {
   nodeName: string
   seq: number
   status: string
+  cacheHit?: boolean
   output?: string
   errorMessage?: string
   elapsedMs: number
@@ -191,6 +192,7 @@ export interface NodeLog {
 
 export interface ExecutionDetail {
   runId: string
+  resumeRunId?: string
   workflowId: number
   workflowName: string
   status: string

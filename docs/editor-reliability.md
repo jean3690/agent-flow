@@ -32,18 +32,18 @@
 | --- | --- | --- |
 | `make test-web` / 前端目录 `npm test` | 13 项 SSE 单元回归，无需浏览器 | 否 |
 | `make test-ui` / 前端目录 `npm run test:ui` | 19 项编辑、保存竞态、发布、路由保护、执行状态与续跑浏览器回归 | 否 |
-| `make check` | AI / Java / 前端单元 / 三种 SDK 测试、类型检查与构建 | 否 |
+| `make check` | AI / 平台服务 / 前端单元 / 两种 SDK 测试、类型检查与构建 | 否 |
 | `make e2e-ui` | 原有真实三端浏览器冒烟 | 是 |
 
 隔离浏览器回归复用现有 Playwright，自动启动 `127.0.0.1:5175` 的 Vite 服务并在结束后停止；严格使用独立端口，所有后端接口被 mock，不连接本地数据库或真实模型。首次运行需在前端目录执行 `npx playwright install chromium`。新增入口已接入 CI，测试结果目录加入忽略规则。
 
 ## 本轮实测结果
 
-- `make check` 通过：AI 96、Java 57、前端 SSE 13、Python SDK 12、TypeScript SDK 14、Java SDK 10，共 **202 项测试**，以及前端 / TS SDK 类型检查、前端 / Java 服务 / TS SDK 构建。
+- `make check` 通过：AI 96、平台服务 57、前端 SSE 13、Python SDK 12、TypeScript SDK 14、Python/TypeScript SDK 10，共 **202 项测试**，以及前端 / TS SDK 类型检查、前端 / 平台服务 / TS SDK 构建。
 - `make test-ui` 的 **19 项 Chromium 隔离回归通过**；本轮合计新增 32 项前端测试。
 - 续跑查询响应式修复后，另行重跑前端类型检查与生产构建，通过。
 - 本轮没有重新运行依赖真实三端的 `make e2e-ui`，也没有进行真实模型联调或性能压测。
-- Python / JDK / Mockito 的第三方依赖弃用警告仍存在，不影响测试通过。
+- Python / 第三方库 的第三方依赖弃用警告仍存在，不影响测试通过。
 
 ## 边界
 

@@ -4,6 +4,7 @@ import os
 from functools import lru_cache
 from pathlib import Path
 
+from pydantic import Field, PrivateAttr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # qwen 的环境变量名是 dashscope_*，与 provider key 不一致
@@ -12,6 +13,9 @@ _SETTINGS_ALIAS = {"qwen": "dashscope"}
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="AI_", env_file=".env", extra="ignore")
+    # Runtime-only storage context, never bindable through environment variables.
+    _storage_owner_id: int | None = PrivateAttr(default=None)
+    _storage_legacy: bool = PrivateAttr(default=False)
 
     service_port: int = 8000
     mock_mode: str = "auto"  # auto | always | never
@@ -21,8 +25,12 @@ class Settings(BaseSettings):
     file_dir: str = ""
     max_upload_mb: int = 50
     max_read_chars: int = 200_000
-    max_concurrency: int = 8
-    java_service_base_url: str = "http://127.0.0.1:8084"
+    max_concurrency: int = Field(default=8, ge=1, le=256)
+    event_buffer_max_events: int = Field(default=256, ge=1, le=100_000)
+    event_buffer_max_bytes: int = Field(default=4_194_304, ge=256)
+    event_max_bytes: int = Field(default=1_048_576, ge=256)
+    event_heartbeat_seconds: float = Field(default=15, ge=1, le=300)
+    platform_service_base_url: str = "http://127.0.0.1:8084"
     internal_token: str = "agent-flow-internal"
     managed_skills_dir: str = "./data/skills"
     # Explicit deployment-only exceptions for private MCP hosts (no wildcards).

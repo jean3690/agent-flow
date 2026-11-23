@@ -29,7 +29,7 @@
 ## 超时与执行级超时
 
 - 节点创建待办时把 `expiresInSeconds` 设为 `waitSeconds`，到点后任务变 `EXPIRED`。
-- Java 在提交执行时会扫描 `human_approval` 节点，把整次执行的 `options.timeoutMs` 至少提升到 `waitSeconds + 30s`，避免图级超时先于审批到期。
+- 平台服务在提交执行时会扫描 `human_approval` 节点，把整次执行的 `options.timeoutMs` 至少提升到 `waitSeconds + 30s`，避免图级超时先于审批到期。
 - 超过等待时间节点失败，需要重新发起执行；待办不会自动重放。
 - 长时间挂起会占用一个执行并发槽；默认建议控制在 2 分钟内，生产部署需同步检查反向代理的 SSE 读超时。
 

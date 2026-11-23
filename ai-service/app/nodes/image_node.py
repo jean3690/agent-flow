@@ -13,6 +13,13 @@ from urllib.parse import urlsplit
 import httpx
 
 from app.core.errors import NodeExecutionError
+from app.core.storage import (
+    is_local_file_reference,
+    media_target,
+    model_image_reference,
+    scoped_relative_path,
+    storage_url,
+)
 from app.core.template import build_names, render
 from app.graph.context import NodeContext
 from app.graph.state import FlowState
@@ -38,14 +45,18 @@ class ImageNodeExecutor(NodeExecutor):
         reference = render(str(config.get("referenceImageUrl") or ""), names).strip()
         size = str(config.get("size") or _DEFAULT_SIZE)
         filename = f"{uuid.uuid4().hex}.png"
-        target = Path(ctx.settings.audio_dir) / filename
+        storage = ctx.storage
+        target = media_target(storage, filename)
+        if reference and is_local_file_reference(reference):
+            scoped_relative_path(storage, reference)
 
         if provider == "mock" or not ctx.credentials(provider)[0]:
             target.write_bytes(_placeholder_png(prompt))
             ctx.emit("node_log", nodeId=node.id, level="info", message="未配置图像厂商，已生成占位图片")
-            return self._result(filename, provider, model, size, mock=True)
+            return self._result(storage_url(storage, filename), provider, model, size, mock=True)
 
         api_key, base_url = ctx.credentials(provider)
+        reference = model_image_reference(storage, reference)
         try:
             if provider == "step":
                 image_url, b64 = await _step_image(api_key, base_url, model, prompt, size, reference)
@@ -59,11 +70,11 @@ class ImageNodeExecutor(NodeExecutor):
         except Exception as exc:  # noqa: BLE001 - surface provider errors to the run
             raise NodeExecutionError(node.id, f"图像生成失败: {exc}") from exc
 
-        return self._result(filename, provider, model, size, mock=False)
+        return self._result(storage_url(storage, filename), provider, model, size, mock=False)
 
-    def _result(self, filename: str, provider: str, model: str, size: str, mock: bool) -> dict[str, Any]:
+    def _result(self, url: str, provider: str, model: str, size: str, mock: bool) -> dict[str, Any]:
         return {
-            "imageUrl": f"/files/{filename}",
+            "imageUrl": url,
             "provider": provider,
             "model": model,
             "size": size,

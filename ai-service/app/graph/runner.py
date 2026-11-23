@@ -46,7 +46,7 @@ class WorkflowRunner:
                 nodeCount=len(flow.nodes),
             )
             graph = build_graph(flow, ctx)
-            timeout_s = max(1.0, (self.request.options.timeout_ms or 120_000) / 1000)
+            timeout_s = self.request.options.timeout_ms / 1000
             final_state = await asyncio.wait_for(
                 graph.ainvoke(
                     {

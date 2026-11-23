@@ -46,7 +46,7 @@ def _mock_body(prompt: str, model: str) -> str:
         "要点：\n"
         "1. 当前处于 AI_MOCK_MODE，工作流编排、节点流转与 SSE 事件均真实执行。\n"
         "2. 配置对应厂商的 API Key 后即可切换为真实模型输出。\n"
-        "3. 该段文本用于验证整条链路（前端 → Java → Python → SSE 回传）。"
+        "3. 该段文本用于验证整条链路（前端 → 平台服务 → Python → SSE 回传）。"
     )
 
 

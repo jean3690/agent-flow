@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test'
 
 // UI end-to-end tests drive the real browser against a running stack.
-// The three services (web :5173, java :8084, ai :8000) must already be up,
+// The three services (web :5173, platform :8084, ai :8000) must already be up,
 // e.g. via './start.sh' (or 'make compose'). See .github/workflows/ci.yml.
 const webUrl = process.env.AGENTFLOW_WEB_URL || 'http://localhost:5173'
 

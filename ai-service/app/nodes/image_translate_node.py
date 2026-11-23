@@ -10,7 +10,7 @@ import httpx
 
 from app.core.bailian import MAX_IMAGE_BYTES, api_origin, download_image, provider_error, upload_image
 from app.core.errors import NodeExecutionError
-from app.core.storage import resolve_existing
+from app.core.storage import media_target, resolve_existing, scoped_relative_path, storage_url
 from app.core.template import build_names, render
 from app.core.web import _check_url
 from app.graph.context import NodeContext
@@ -47,8 +47,11 @@ class ImageTranslateNodeExecutor(NodeExecutor):
             if model != "qwen-mt-image-2.0":
                 raise ValueError("此节点适配 qwen-mt-image-2.0，请勿填入视觉问答或图片生成模型")
             mock = ctx.mock_for(provider)
+            storage = ctx.storage
+            if reference.startswith(("/files/", "/api/files/")) or "://" not in reference:
+                scoped_relative_path(storage, reference)
             filename = uuid.uuid4().hex + (".png" if mock else ".jpg")
-            target = ctx.settings.audio_dir / filename
+            target = media_target(storage, filename)
             if mock:
                 target.write_bytes(_placeholder_png("mock image translation"))
                 message, usage, request_id = "模拟图片翻译：占位图片，未翻译原图", {}, ""
@@ -59,7 +62,7 @@ class ImageTranslateNodeExecutor(NodeExecutor):
                 async with httpx.AsyncClient(timeout=120, follow_redirects=False) as client:
                     image_url = reference
                     if reference.startswith(("/files/", "/api/files/")) or "://" not in reference:
-                        path, _ = resolve_existing(ctx.settings, reference)
+                        path, _ = resolve_existing(storage, reference)
                         _validate_local_image(path)
                         image_url = await upload_image(client, origin, api_key, model, path)
                     elif not reference.startswith("oss://"):
@@ -88,7 +91,7 @@ class ImageTranslateNodeExecutor(NodeExecutor):
                     await download_image(client, data["output"]["image_url"], target)
                     message = str(data["output"].get("message") or "")
                     usage, request_id = data.get("usage") or {}, data.get("request_id") or ""
-            return {"imageUrl": f"/files/{filename}", "originalImageUrl": reference, "provider": provider,
+            return {"imageUrl": storage_url(storage, filename), "originalImageUrl": reference, "provider": provider,
                     "model": model, "sourceLang": source, "targetLang": target_lang, "message": message,
                     "usage": usage, "requestId": request_id, "mock": mock, "createdAt": int(time.time() * 1000)}
         except Exception as exc:

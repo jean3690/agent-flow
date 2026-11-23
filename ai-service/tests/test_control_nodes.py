@@ -31,6 +31,7 @@ def _ctx(tmp_path, *, flow=None, subflows=None, bus=None):
     return NodeContext(
         run_id="run-control",
         settings=Settings(mock_mode="always", file_dir=str(tmp_path), output_dir=str(tmp_path)),
+        user_id=1,
         flow=flow or Flow(nodes=[], edges=[]),
         bus=bus or RecordingBus(),
         subflows=subflows or {},

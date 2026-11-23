@@ -1,21 +1,13 @@
 from __future__ import annotations
 
-from secrets import compare_digest
-
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
-from app.config import get_settings
+from app.api.internal_auth import require_internal
 from app.core.errors import SkillNotFoundError
 from app.skills.registry import get_skill_registry
 
 router = APIRouter(prefix="/v1/skills", tags=["skills"])
-
-
-def require_internal(x_internal_token: str = Header(default="")):
-    expected = get_settings().internal_token
-    if not expected or not compare_digest(x_internal_token, expected):
-        raise HTTPException(status_code=403, detail="仅允许平台服务管理技能")
 
 
 class SkillSaveRequest(BaseModel):

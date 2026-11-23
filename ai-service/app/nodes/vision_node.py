@@ -1,11 +1,9 @@
 from __future__ import annotations
 
-import base64
-import time
-from pathlib import Path
 from typing import Any
 
 from app.core.errors import NodeExecutionError
+from app.core.storage import is_local_file_reference, model_image_reference, scoped_relative_path
 from app.core.template import build_names, render
 from app.graph.context import NodeContext
 from app.graph.state import FlowState
@@ -39,6 +37,9 @@ class VisionNodeExecutor(NodeExecutor):
         if not image_ref:
             raise NodeExecutionError(node.id, "视觉理解节点缺少图片地址")
         prompt = render(config.get("prompt") or "描述这张图片", names, strict=True)
+        local = is_local_file_reference(image_ref)
+        if local:
+            scoped_relative_path(ctx.storage, image_ref)
 
         if ctx.mock_for(provider):
             text = (
@@ -84,16 +85,6 @@ class VisionNodeExecutor(NodeExecutor):
 
     async def _to_model_url(self, node: FlowNode, image_ref: str, ctx: NodeContext) -> str:
         """云厂商访问不了本地 /files，把本地文件转成 data URL。"""
-        path = image_ref.split("?", 1)[0]
-        if not path.startswith("/files/"):
+        if not is_local_file_reference(image_ref):
             return image_ref
-        filename = path.removeprefix("/files/")
-        if "/" in filename or ".." in filename:
-            raise NodeExecutionError(node.id, f"非法图片路径: {image_ref}")
-        file = Path(ctx.settings.audio_dir) / filename
-        if not file.exists():
-            raise NodeExecutionError(node.id, f"图片不存在: {image_ref}")
-        suffix = file.suffix.lstrip(".").lower() or "png"
-        mime = "jpeg" if suffix in {"jpg", "jpeg"} else suffix
-        encoded = base64.b64encode(file.read_bytes()).decode("ascii")
-        return f"data:image/{mime};base64,{encoded}"
+        return model_image_reference(ctx.storage, image_ref)

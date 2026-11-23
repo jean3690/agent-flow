@@ -9,6 +9,7 @@ from typing import Any
 
 import httpx
 
+from app.core.storage import media_target, storage_url
 from app.core.template import build_names, render
 from app.graph.context import NodeContext
 from app.graph.state import FlowState
@@ -34,7 +35,8 @@ class TtsNodeExecutor(NodeExecutor):
             text = "（空文本）"
 
         filename = f"{uuid.uuid4().hex}.{audio_format if provider != 'mock' else 'wav'}"
-        target = Path(ctx.settings.audio_dir) / filename
+        storage = ctx.storage
+        target = media_target(storage, filename)
         api_key, base_url = ctx.credentials(provider)
 
         if provider != "mock" and api_key:
@@ -58,7 +60,7 @@ class TtsNodeExecutor(NodeExecutor):
             ctx.emit("node_log", nodeId=node.id, level="info", message="TTS 未配置真实厂商，已生成占位音频")
 
         return {
-            "audioUrl": f"/files/{filename}",
+            "audioUrl": storage_url(storage, filename),
             "durationMs": duration_ms,
             "format": target.suffix.lstrip("."),
             "text": text,

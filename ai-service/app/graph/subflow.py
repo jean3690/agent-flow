@@ -67,6 +67,8 @@ async def run_subflow(
         settings=ctx.settings,
         flow=flow,
         bus=_SilentBus(),
+        workflow_id=ctx.workflow_id,
+        user_id=ctx.user_id,
         providers=ctx.providers,
         mcp_servers=ctx.mcp_servers,
         subflows=ctx.subflows,

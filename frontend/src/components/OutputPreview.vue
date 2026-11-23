@@ -1,11 +1,12 @@
 <template>
   <div class="preview">
-    <div v-for="(media, index) in mediaList" :key="index" class="preview__media">
+    <div v-for="(media, index) in visibleMedia" :key="index" class="preview__media">
       <img v-if="media.kind === 'image'" :src="media.url" alt="output" class="preview__image" />
       <video v-else-if="media.kind === 'video'" :src="media.url" controls class="preview__video" />
       <audio v-else :src="media.url" controls class="preview__audio" />
-      <span class="preview__hint mono">{{ media.url }}</span>
+      <span class="preview__hint mono">{{ media.source }}</span>
     </div>
+    <span v-if="error" class="af-muted">{{ error }}</span>
     <pre v-if="text" class="preview__text mono">{{ text }}</pre>
     <div v-if="!text && !mediaList.length" class="preview__empty">暂无输出</div>
   </div>
@@ -13,6 +14,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useProtectedMedia } from '../composables/useProtectedMedia'
 
 type MediaKind = 'image' | 'audio' | 'video'
 interface MediaItem {
@@ -49,6 +51,9 @@ const mediaList = computed(() => {
   const seen = new Set<string>()
   return found.filter((item) => (seen.has(item.url) ? false : seen.add(item.url)))
 })
+const { urls, error } = useProtectedMedia(computed(() => mediaList.value.map(item => item.url)))
+const visibleMedia = computed(() => mediaList.value.filter(item => urls.value[item.url])
+  .map(item => ({ ...item, source: item.url, url: urls.value[item.url] })))
 
 function collect(value: unknown, depth = 0): MediaItem[] {
   if (depth > 3 || value === null || value === undefined) return []
@@ -78,7 +83,7 @@ function toMedia(value: string): MediaItem | null {
   if (!/^(https?:\/\/|\/|\.\/)/i.test(raw)) return null
   const path = raw.replace(/^https?:\/\/[^/]+/i, '')
 
-  if (/\.(png|jpe?g|gif|webp|bmp|svg)(\?|#|$)/i.test(path)) {
+  if (/\.(png|jpe?g|gif|webp|bmp)(\?|#|$)/i.test(path)) {
     return { url: resolve(raw), kind: 'image' }
   }
   if (/\.(mp3|wav|ogg|m4a|aac|flac)(\?|#|$)/i.test(path)) {
@@ -91,7 +96,7 @@ function toMedia(value: string): MediaItem | null {
 }
 
 function resolve(url: string) {
-  return url.startsWith('/') ? '/api' + url : url
+  return url
 }
 </script>
 

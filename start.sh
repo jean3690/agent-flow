@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# AgentFlow 本地一键启动：AI(Python) + Java + 前端
+# AgentFlow 本地一键启动：AI(Python) + 平台服务(Python) + 前端
 # 用法:
-#   ./start.sh            启动三端，Ctrl+C 全部停止
-#   ./start.sh ai|java|web  只启动某一端
-#   ./start.sh status     查看端口与健康状态
-#   ./start.sh stop       停止由本脚本启动的进程
+#   ./start.sh               启动三端，Ctrl+C 全部停止
+#   ./start.sh ai|platform|web  只启动某一端
+#   ./start.sh status        查看端口与健康状态
+#   ./start.sh stop          停止由本脚本启动的进程
 
 set -uo pipefail
 
@@ -12,7 +12,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOG_DIR="$ROOT/logs"
 PID_DIR="$LOG_DIR/pids"
 AI_PORT=8000
-JAVA_PORT=8084
+PLATFORM_PORT=8084
 WEB_PORT=5173
 
 mkdir -p "$PID_DIR"
@@ -42,6 +42,14 @@ wait_http() { # name url timeout_seconds
   return 1
 }
 
+kill_tree() {
+  local pid=$1 child
+  for child in $(pgrep -P "$pid" 2>/dev/null); do
+    kill_tree "$child"
+  done
+  kill -TERM "$pid" 2>/dev/null
+}
+
 start_service() { # name dir command port url [timeout]
   local name=$1 dir=$2 cmd=$3 port=$4 url=$5 timeout=${6:-90}
   local pid_file="$PID_DIR/$name.pid"
@@ -66,14 +74,6 @@ start_service() { # name dir command port url [timeout]
   ok "$name 就绪 (pid $pid)"
 }
 
-kill_tree() {
-  local pid=$1 child
-  for child in $(pgrep -P "$pid" 2>/dev/null); do
-    kill_tree "$child"
-  done
-  kill -TERM "$pid" 2>/dev/null
-}
-
 stop_service() { # name
   local name=$1
   local pid_file="$PID_DIR/$name.pid"
@@ -90,13 +90,13 @@ stop_service() { # name
 stop_all() {
   info "停止服务…"
   stop_service web
-  stop_service java
+  stop_service platform
   stop_service ai
 }
 
 show_status() {
   for entry in "ai:$AI_PORT:http://127.0.0.1:$AI_PORT/health" \
-               "java:$JAVA_PORT:http://127.0.0.1:$JAVA_PORT/api/system/health" \
+               "platform:$PLATFORM_PORT:http://127.0.0.1:$PLATFORM_PORT/api/system/health" \
                "web:$WEB_PORT:http://127.0.0.1:$WEB_PORT/"; do
     local name=${entry%%:*} rest=${entry#*:}
     local port=${rest%%:*} url=${rest#*:}
@@ -113,7 +113,14 @@ show_status() {
 
 require_ai() {
   if [ ! -x "$ROOT/ai-service/.venv/bin/uvicorn" ]; then
-    fail "缺少 ai-service/.venv，先执行: make install（或 cd ai-service && python3 -m venv .venv && .venv/bin/pip install -e '.[dev]'）"
+    fail "缺少 ai-service/.venv，先执行: make install"
+    exit 1
+  fi
+}
+
+require_platform() {
+  if [ ! -x "$ROOT/platform-service/.venv/bin/uvicorn" ]; then
+    fail "缺少 platform-service/.venv，先执行: make install"
     exit 1
   fi
 }
@@ -132,11 +139,10 @@ start_ai() {
     "$AI_PORT" "http://127.0.0.1:$AI_PORT/health"
 }
 
-start_java() {
-  command -v mvn >/dev/null 2>&1 || { fail "未找到 mvn（需要 JDK 21+ / Maven 3.9+）"; exit 1; }
-  info "首次启动 Maven 需下载依赖，可能较慢"
-  start_service java "$ROOT/java-service" "mvn -q spring-boot:run" \
-    "$JAVA_PORT" "http://127.0.0.1:$JAVA_PORT/api/system/health" 240
+start_platform() {
+  require_platform
+  start_service platform "$ROOT/platform-service" ".venv/bin/uvicorn app.main:app --port $PLATFORM_PORT" \
+    "$PLATFORM_PORT" "http://127.0.0.1:$PLATFORM_PORT/api/system/health"
 }
 
 start_web() {
@@ -156,13 +162,13 @@ case "${1:-all}" in
     trap on_interrupt INT TERM
     info "启动 AgentFlow 三端（Ctrl+C 停止全部）"
     start_ai || { stop_all; exit 1; }
-    start_java || { stop_all; exit 1; }
+    start_platform || { stop_all; exit 1; }
     start_web || { stop_all; exit 1; }
     echo
     ok "全部就绪 → http://localhost:$WEB_PORT  (admin / admin123)"
-    echo "  AI   http://127.0.0.1:$AI_PORT/health"
-    echo "  Java http://127.0.0.1:$JAVA_PORT/api/system/health"
-    echo "  日志 $LOG_DIR"
+    echo "  AI       http://127.0.0.1:$AI_PORT/health"
+    echo "  平台服务 http://127.0.0.1:$PLATFORM_PORT/api/system/health"
+    echo "  日志     $LOG_DIR"
     echo
     info "按 Ctrl+C 停止全部服务"
     wait
@@ -172,9 +178,9 @@ case "${1:-all}" in
     start_ai || exit 1
     wait
     ;;
-  java)
+  platform)
     trap on_interrupt INT TERM
-    start_java || exit 1
+    start_platform || exit 1
     wait
     ;;
   web)
@@ -189,7 +195,7 @@ case "${1:-all}" in
     show_status
     ;;
   *)
-    echo "用法: $0 [all|ai|java|web|stop|status]"
+    echo "用法: $0 [all|ai|platform|web|stop|status]"
     exit 1
     ;;
 esac

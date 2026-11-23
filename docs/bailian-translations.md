@@ -34,7 +34,7 @@ Docker Compose 使用根目录环境变量 `DASHSCOPE_API_KEY` / `DASHSCOPE_API_
 - 源语种可选 `auto`，目标语种填写 `en` / `zh` / `ja` 等百炼支持的语种编码。
 - 支持英文领域提示、术语 JSON `[{"src":"人工智能","tgt":"Artificial Intelligence"}]`，以及跳过商品/人物主体上的文字。
 - 默认同步调用；开启异步后只提交一次任务，每秒查询结果，最多等待 5 分钟。节点重试可能新建云任务，不宜对收费操作盲目开启重试。取消本地执行不会自动取消已受理的百炼异步任务。
-- 工作流整体超时仍默认 120 秒。如需要完整等待较长的异步任务，调用执行接口时将 `options.timeoutMs` 设为大于 300000，并检查 Java 的 `AI_SERVICE_TIMEOUT_MS` 与反向代理超时；仅开启异步开关不会自动放宽整体执行限制。
+- 工作流整体超时仍默认 120 秒。如需要完整等待较长的异步任务，调用执行接口时将 `options.timeoutMs` 设为大于 300000，并检查 `AI_SERVICE_TIMEOUT_MS` 与反向代理超时；仅开启异步开关不会自动放宽整体执行限制。
 - 成功后下载并验证 JPG，保存到媒体目录，下游引用 `{{translate.imageUrl}}`。输出包含 `originalImageUrl`、语种、百炼 `requestId`、`usage` 和提示信息。
 - `No text detected for translation` 仍是百炼成功且收费的结果，提示信息会保留。
 - Mock 输出明确标记为占位图，不宣称已翻译原图。
@@ -54,22 +54,22 @@ Docker Compose 使用根目录环境变量 `DASHSCOPE_API_KEY` / `DASHSCOPE_API_
 ### 鉴权与协议
 
 ```
-浏览器 --JWT/API Key REST--> Java --内部令牌+百炼凭据--> Python
-浏览器 --一次性 ticket WS--> Java --内部令牌 WS--> Python --百炼 WS--> 云模型
+浏览器 --JWT/API Key REST--> 平台服务 --内部令牌+百炼凭据--> Python
+浏览器 --一次性 ticket WS--> 平台服务 --内部令牌 WS--> Python --百炼 WS--> 云模型
 ```
 
-- `POST /api/translations/realtime/sessions`：已登录用户创建会话。请求包含 `provider`、`targetLang`、`apiHost`、`outputAudio`、可选 `voice`（默认 Tina）；用户归属由 Java 注入，浏览器不能注入百炼凭据。
+- `POST /api/translations/realtime/sessions`：已登录用户创建会话。请求包含 `provider`、`targetLang`、`apiHost`、`outputAudio`、可选 `voice`（默认 Tina）；用户归属由平台服务注入，浏览器不能注入百炼凭据。
 - 返回 `ticket`（60 秒有效、一次性消费）、采样率及 mock 标记，不返回厂商 Key。
 - 连接 `/api/translations/realtime/ws`，首帧发送 `{"type":"connect","ticket":"..."}`。ticket 不在 URL 或访问日志中。
 - 输入帧：`{"type":"audio","audio":"<base64 PCM16>"}`，每帧不超过 500 ms；收尾：`{"type":"finish"}`。
 - 返回：`session.ready`、`transcript.delta/done`、`translation.delta/done`、`audio.delta`、`usage`、`session.finished`、`error`。每段字幕用 `itemId` 区分；`usage` 为累计值，以最后一次为准，不累加各轮用量。
 - Python 仅在收到 `session.created` 后配置 3.8 的 `output_modalities`、`audio.input.turn_detection` 和 `translation.language`；收到 `session.updated` 后才允许采集输入。没有套用 Omni 的 `response.create`，也没有混用 3.5 的字段。
-- Python 限制待连接 tickets、总并发和单用户并发；错误信息会遮蔽 Key。Vite 和 Nginx 均支持 WebSocket 转发，Java 检查配置的允许来源。
-- 生产部署必须更换默认 `AI_INTERNAL_TOKEN`，并将 Python 服务限制在内部网络；只对外暴露 Java 与前端入口。
+- Python 限制待连接 tickets、总并发和单用户并发；错误信息会遮蔽 Key。Vite 和 Nginx 均支持 WebSocket 转发，平台服务检查配置的允许来源。
+- 生产部署必须更换默认 `AI_INTERNAL_TOKEN`，并将 Python 服务限制在内部网络；只对外暴露平台服务与前端入口。
 
 ### 部署边界
 
-当前会话与 ticket 存放在 Python 单实例内存中。多副本需对建会话请求和 WebSocket 连接做粘性路由；实例重启会使 ticket 和活跃会话失效。Java 横向扩容同样应保持 WebSocket 连接稳定。尚不提供跨实例会话恢复、持久化字幕或自动重连（避免重复送音频和重复收费）。
+当前会话与 ticket 存放在 Python 单实例内存中。多副本需对建会话请求和 WebSocket 连接做粘性路由；实例重启会使 ticket 和活跃会话失效。平台服务横向扩容同样应保持 WebSocket 连接稳定。尚不提供跨实例会话恢复、持久化字幕或自动重连（避免重复送音频和重复收费）。
 
 ## 验证
 

@@ -1,4 +1,4 @@
-"""Against a running stack: image workflow + authenticated ticket + Java/Python WS.
+"""Against a running stack: image workflow + authenticated ticket + platform/Python WS.
 
 Explicit mock only. No vendor credentials or microphone recordings are needed.
 Run with ai-service/.venv/bin/python e2e/verify_translations.py.
@@ -28,7 +28,7 @@ async def main():
         output = node_output(events, "translate")
         assert run_status(events) == "success" and output["mock"]
         async with httpx.AsyncClient() as client:
-            image = await client.get(BASE + "/api" + output["imageUrl"])
+            image = await client.get(BASE + "/api" + output["imageUrl"], headers={"Authorization": "Bearer " + token})
             assert image.status_code == 200 and image.content.startswith(b"\x89PNG")
         print("PASS image translation workflow and persisted media")
     finally:
@@ -48,7 +48,7 @@ async def main():
         await ws.send(json.dumps({"type": "finish"}))
         assert json.loads(await asyncio.wait_for(ws.recv(), 10))["type"] == "translation.done"
         assert json.loads(await asyncio.wait_for(ws.recv(), 10))["type"] == "session.finished"
-    print("PASS Java -> Python live audio relay, finish and terminal event")
+    print("PASS platform -> Python live audio relay, finish and terminal event")
     async with connect(uri, proxy=None) as ws:
         await ws.send(json.dumps({"type": "connect", "ticket": ticket}))
         event = json.loads(await asyncio.wait_for(ws.recv(), 10))

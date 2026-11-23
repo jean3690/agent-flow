@@ -68,7 +68,8 @@ async def test_skill_management_requires_internal_auth_and_sanitizes_validation(
     monkeypatch.setattr(skill_routes, "get_skill_registry", lambda: registry)
     async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
         assert (await client.put("/v1/skills/test-skill", json={"content": CONTENT})).status_code == 403
-        headers = {"X-Internal-Token": skill_routes.get_settings().internal_token}
+        from app.config import get_settings
+        headers = {"X-Internal-Token": get_settings().internal_token}
         response = await client.put("/v1/skills/test-skill", json={"content": CONTENT}, headers=headers)
         assert response.status_code == 200
         assert (await client.delete("/v1/skills/test-skill", headers=headers)).status_code == 200

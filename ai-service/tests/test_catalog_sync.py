@@ -14,7 +14,7 @@ from app.catalog import node_catalog
 
 _JSON_PATH = (
     Path(__file__).resolve().parents[2]
-    / "java-service/src/main/resources/node-definitions.json"
+    / "platform-service/app/resources/node-definitions.json"
 )
 
 

@@ -14,7 +14,7 @@ from app.schemas.flow import Flow, FlowNode
 
 
 def _context(**overrides) -> NodeContext:
-    settings = Settings(java_service_base_url="http://java.test", internal_token="token",
+    settings = Settings(platform_service_base_url="http://java.test", internal_token="token",
                         tavily_api_key="tvly-test", tavily_base_url="https://api.tavily.test")
     return NodeContext(
         run_id="run-web",

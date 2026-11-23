@@ -1,6 +1,6 @@
 # AgentFlow Python SDK
 
-适用于 Python 3.9+。通过 API Key 或 JWT 调用 Java 服务，自动解包业务响应，并支持同步执行与 SSE 逐事件消费。
+适用于 Python 3.9+。通过 API Key 或 JWT 调用平台服务，自动解包业务响应，并支持同步执行与 SSE 逐事件消费。
 
 ## 本地安装
 

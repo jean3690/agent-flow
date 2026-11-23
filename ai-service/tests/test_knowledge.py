@@ -42,7 +42,7 @@ def test_knowledge_node_requires_knowledge_base():
 def _memory_context() -> NodeContext:
     return NodeContext(
         run_id="run-kb-write",
-        settings=Settings(java_service_base_url="http://java.test", internal_token="token"),
+        settings=Settings(platform_service_base_url="http://java.test", internal_token="token"),
         flow=Flow(nodes=[], edges=[]),
         bus=EventBus(),
         workflow_id="42",

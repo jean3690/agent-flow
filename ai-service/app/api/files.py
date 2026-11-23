@@ -1,34 +1,48 @@
-"""File upload / download / listing API.
+"""Internal, user-scoped file upload / download / listing API.
 
-Public download route:  GET /files/{name}
-REST management routes: /v1/files*
+All routes, including /files/{name}, require the platform internal token and storage context.
 
-The Java service proxies these endpoints through ``/api/files`` so browsers and
-external callers only need to talk to the Java port.
+The platform service proxies these endpoints through ``/api/files`` so browsers and
+external callers only need to talk to the platform port.
 """
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Annotated, Any
 
-from fastapi import APIRouter, File, Form, HTTPException, Query, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
-from app.config import get_settings
+from app.api.internal_auth import require_internal
+from app.config import Settings, get_settings
 from app.core.storage import (
     FileNotFoundStorageError,
     StorageError,
     delete_file,
     file_metadata,
+    legacy_storage,
     list_files,
     read_text,
     resolve_existing,
     save_text,
     save_upload,
+    user_storage,
 )
 
 router = APIRouter(tags=["files"])
+
+
+def file_settings(x_internal_token: str = Header(default=""), x_storage_user_id: int | None = Header(default=None),
+                  x_storage_legacy: bool = Header(default=False)) -> Settings:
+    require_internal(x_internal_token)
+    try:
+        return legacy_storage(get_settings()) if x_storage_legacy else user_storage(get_settings(), x_storage_user_id)
+    except StorageError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
+FileSettings = Annotated[Settings, Depends(file_settings)]
 
 
 class TextFileRequest(BaseModel):
@@ -52,14 +66,16 @@ def _check_size(size: int) -> None:
 
 
 @router.get("/v1/files")
-async def list_files_api(prefix: str = "", limit: int = Query(default=500, ge=1, le=5000)):
-    settings = get_settings()
-    return {"data": list_files(settings, prefix=prefix, limit=limit)}
+async def list_files_api(settings: FileSettings, prefix: str = "", limit: int = Query(default=500, ge=1, le=5000)):
+    try:
+        return {"data": list_files(settings, prefix=prefix, limit=limit)}
+    except StorageError as exc:
+        _raise_http(exc)
 
 
 @router.post("/v1/files")
-async def upload_raw(request: Request, name: str = "") -> dict[str, Any]:
-    """Raw-body upload used by the Java service and simple HTTP clients.
+async def upload_raw(request: Request, settings: FileSettings, name: str = "") -> dict[str, Any]:
+    """Raw-body upload used by the platform service and simple HTTP clients.
 
     ``name`` may be a query parameter or the ``X-File-Name`` header.  When the
     body is JSON with ``{name, content}`` it is treated as a text write, which
@@ -78,7 +94,7 @@ async def upload_raw(request: Request, name: str = "") -> dict[str, Any]:
             _check_size(len(request_model.content.encode(request_model.encoding)))
             try:
                 metadata = save_text(
-                    get_settings(),
+                    settings,
                     request_model.content,
                     name=request_model.name,
                     encoding=request_model.encoding,
@@ -95,7 +111,7 @@ async def upload_raw(request: Request, name: str = "") -> dict[str, Any]:
     filename = name or request.headers.get("x-file-name") or ""
     try:
         metadata = save_upload(
-            get_settings(),
+            settings,
             body,
             original_name=filename or None,
             name=name,
@@ -108,7 +124,8 @@ async def upload_raw(request: Request, name: str = "") -> dict[str, Any]:
 
 @router.post("/v1/files/upload")
 async def upload_multipart(
-    file: UploadFile = File(...),
+    file: Annotated[UploadFile, File()],
+    settings: FileSettings,
     name: str = Form(default=""),
     overwrite: bool = Form(default=False),
 ) -> dict[str, Any]:
@@ -118,7 +135,7 @@ async def upload_multipart(
         raise HTTPException(status_code=400, detail="上传内容为空")
     try:
         metadata = save_upload(
-            get_settings(),
+            settings,
             data,
             original_name=file.filename,
             name=name,
@@ -130,11 +147,11 @@ async def upload_multipart(
 
 
 @router.post("/v1/files/text")
-async def write_text(request: TextFileRequest) -> dict[str, Any]:
+async def write_text(request: TextFileRequest, settings: FileSettings) -> dict[str, Any]:
     _check_size(len(request.content.encode(request.encoding)))
     try:
         metadata = save_text(
-            get_settings(),
+            settings,
             request.content,
             name=request.name,
             encoding=request.encoding,
@@ -147,21 +164,21 @@ async def write_text(request: TextFileRequest) -> dict[str, Any]:
 
 
 @router.get("/v1/files/{name:path}/meta")
-async def file_meta(name: str):
+async def file_meta(name: str, settings: FileSettings):
     try:
-        path, rel = resolve_existing(get_settings(), name)
+        path, rel = resolve_existing(settings, name)
     except StorageError as exc:
         _raise_http(exc)
-    return {"data": file_metadata(path, rel)}
+    return {"data": file_metadata(path, rel, settings=settings)}
 
 
 @router.get("/v1/files/{name:path}/text")
 async def read_text_api(
     name: str,
+    settings: FileSettings,
     encoding: str = "utf-8",
     max_chars: int = Query(default=0, ge=0, le=5_000_000),
 ):
-    settings = get_settings()
     limit = max_chars or settings.max_read_chars
     try:
         return {"data": read_text(settings, name, encoding=encoding, max_chars=limit)}
@@ -170,33 +187,34 @@ async def read_text_api(
 
 
 @router.get("/v1/files/{name:path}")
-async def download_v1(name: str, download: bool = False):
-    return _serve(name, download)
+async def download_v1(name: str, settings: FileSettings, download: bool = False):
+    return _serve(name, download, settings)
 
 
 @router.delete("/v1/files/{name:path}")
-async def remove_file(name: str):
+async def remove_file(name: str, settings: FileSettings):
     try:
-        return {"data": delete_file(get_settings(), name)}
+        return {"data": delete_file(settings, name)}
     except StorageError as exc:
         _raise_http(exc)
 
 
 @router.get("/files/{name:path}")
-async def download_public(name: str, download: bool = False):
-    return _serve(name, download)
+async def download_file(name: str, settings: FileSettings, download: bool = False):
+    return _serve(name, download, settings)
 
 
-def _serve(name: str, download: bool) -> FileResponse:
-    settings = get_settings()
+def _serve(name: str, download: bool, settings: Settings) -> FileResponse:
     try:
         path, rel = resolve_existing(settings, name)
     except StorageError as exc:
         _raise_http(exc)
-    metadata = file_metadata(path, rel)
+    metadata = file_metadata(path, rel, settings=settings)
+    active = path.suffix.lower() in {".html", ".htm", ".svg", ".xml", ".xhtml"}
     return FileResponse(
         path,
-        media_type=metadata["contentType"],
-        headers={"Cache-Control": "public, max-age=3600"},
-        filename=metadata["fileName"] if download else None,
+        media_type="application/octet-stream" if active else metadata["contentType"],
+        headers={"Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff",
+                 "Content-Security-Policy": "sandbox; default-src 'none'"},
+        filename=metadata["fileName"] if download or active else None,
     )

@@ -16,7 +16,7 @@ from app.schemas.flow import Flow, FlowNode
 def _context(workflow_id="42", user_id=7) -> NodeContext:
     return NodeContext(
         run_id="run-memory",
-        settings=Settings(java_service_base_url="http://java.test", internal_token="token"),
+        settings=Settings(platform_service_base_url="http://java.test", internal_token="token"),
         flow=Flow(nodes=[], edges=[]),
         bus=EventBus(),
         workflow_id=workflow_id,

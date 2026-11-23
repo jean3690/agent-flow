@@ -14,7 +14,7 @@ MAX_CHUNKS = 20
 
 async def search_knowledge(ctx: NodeContext, knowledge_base_id: str, query: str,
                            top_k: int = 4) -> list[dict[str, Any]]:
-    base_url = ctx.settings.java_service_base_url.rstrip("/")
+    base_url = ctx.settings.platform_service_base_url.rstrip("/")
     async with httpx.AsyncClient(timeout=20) as client:
         response = await client.post(
             f"{base_url}/internal/knowledge/search",

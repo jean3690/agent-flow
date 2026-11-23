@@ -16,7 +16,7 @@
       <div class="files__head">
         <div>
           <h1>文件</h1>
-          <p class="af-muted">工作流存储目录中的上传文件与节点产物，可预览、下载或删除</p>
+          <p class="af-muted">当前用户目录中的上传文件与节点产物，预览、下载和删除均需登录</p>
         </div>
         <div class="files__tools">
           <el-input
@@ -91,10 +91,11 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { onMounted, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { fileApi } from '../api'
+import { fetchPlatformFile } from '../utils/protectedFiles'
 import { useAuthStore } from '../stores/auth'
 import type { FileItem } from '../types'
 
@@ -113,6 +114,24 @@ const previewKind = ref<'text' | 'image' | 'video' | 'audio' | 'other'>('text')
 const previewText = ref('')
 const previewUrl = ref('')
 const previewRow = ref<FileItem | null>(null)
+let previewController: AbortController | null = null
+let previewObjectUrl = ''
+const pendingDownloads = new Set<AbortController>()
+
+function releasePreview() {
+  previewController?.abort()
+  previewController = null
+  if (previewObjectUrl) URL.revokeObjectURL(previewObjectUrl)
+  previewObjectUrl = ''
+  previewUrl.value = ''
+  previewLoading.value = false
+}
+watch(previewVisible, visible => { if (!visible) releasePreview() })
+onBeforeUnmount(() => {
+  releasePreview()
+  pendingDownloads.forEach(controller => controller.abort())
+  pendingDownloads.clear()
+})
 
 const textVisible = ref(false)
 const saving = ref(false)
@@ -167,8 +186,24 @@ async function saveText() {
   }
 }
 
-function download(row: FileItem) {
-  window.open(fileApi.url(row.path, true), '_blank')
+async function download(row: FileItem) {
+  const controller = new AbortController()
+  pendingDownloads.add(controller)
+  try {
+    const source = row.url || fileApi.url(row.path)
+    const blob = await fetchPlatformFile(source + (source.includes('?') ? '&' : '?') + 'download=true', controller.signal)
+    if (controller.signal.aborted) return
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = row.fileName
+    link.click()
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+  } catch (reason: any) {
+    if (!controller.signal.aborted) ElMessage.error(reason?.message || '文件下载失败')
+  } finally {
+    pendingDownloads.delete(controller)
+  }
 }
 
 async function remove(row: FileItem) {
@@ -183,39 +218,45 @@ async function remove(row: FileItem) {
 }
 
 async function preview(row: FileItem) {
+  releasePreview()
+  const controller = new AbortController()
+  previewController = controller
   const suffix = row.fileName.split('.').pop()?.toLowerCase() || ''
   previewRow.value = row
   previewTitle.value = row.path
-  previewUrl.value = fileApi.url(row.path)
   previewText.value = ''
   previewVisible.value = true
-  if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp'].includes(suffix)) {
+  if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'].includes(suffix)) {
     previewKind.value = 'image'
-    return
-  }
-  if (['mp4', 'webm', 'mov'].includes(suffix)) {
+  } else if (['mp4', 'webm', 'mov'].includes(suffix)) {
     previewKind.value = 'video'
-    return
-  }
-  if (['mp3', 'wav', 'ogg', 'm4a'].includes(suffix)) {
+  } else if (['mp3', 'wav', 'ogg', 'm4a'].includes(suffix)) {
     previewKind.value = 'audio'
-    return
-  }
-  if (['txt', 'md', 'markdown', 'json', 'csv', 'yaml', 'yml', 'xml', 'log', 'html'].includes(suffix)) {
+  } else if (['txt', 'md', 'markdown', 'json', 'csv', 'yaml', 'yml', 'xml', 'log', 'html'].includes(suffix)) {
     previewKind.value = 'text'
-    previewLoading.value = true
-    try {
-      const response = await fetch(previewUrl.value)
-      if (!response.ok) throw new Error('HTTP ' + response.status)
-      previewText.value = await response.text()
-    } catch {
-      previewText.value = '预览失败，请下载后查看'
-    } finally {
-      previewLoading.value = false
-    }
+  } else {
+    previewKind.value = 'other'
     return
   }
-  previewKind.value = 'other'
+  previewLoading.value = true
+  try {
+    const blob = await fetchPlatformFile(row.url || fileApi.url(row.path), controller.signal)
+    if (controller.signal.aborted) return
+    if (previewKind.value === 'text') {
+      const content = await blob.text()
+      if (!controller.signal.aborted) previewText.value = content
+    } else {
+      previewObjectUrl = URL.createObjectURL(blob)
+      previewUrl.value = previewObjectUrl
+    }
+  } catch (reason: any) {
+    if (!controller.signal.aborted) {
+      previewKind.value = 'text'
+      previewText.value = reason?.message || '预览失败，请下载后查看'
+    }
+  } finally {
+    if (!controller.signal.aborted) previewLoading.value = false
+  }
 }
 
 function humanSize(size: number) {

@@ -2,6 +2,7 @@ import asyncio
 
 from app.config import Settings
 from app.core.events import EventBus
+from app.core.storage import resolve_existing
 from app.graph.context import NodeContext
 from app.nodes.image_node import ImageNodeExecutor, _placeholder_png, _step_endpoint
 from app.nodes.video_node import VideoNodeExecutor, _agnes_base, _agnes_num_frames
@@ -15,6 +16,7 @@ def _context(tmp_path):
         settings=Settings(mock_mode="always", output_dir=str(tmp_path)),
         flow=Flow(nodes=[], edges=[]),
         bus=EventBus(),
+        user_id=1,
     )
 
 
@@ -31,7 +33,7 @@ def test_image_node_mock_writes_file(tmp_path):
 
     assert result["mock"] is True
     assert result["imageUrl"].startswith("/files/")
-    file = tmp_path / result["imageUrl"].removeprefix("/files/")
+    file, _ = resolve_existing(ctx.storage, result["imageUrl"])
     assert file.exists() and file.read_bytes()[:4] == b"\x89PNG"
 
 
@@ -76,5 +78,5 @@ def test_video_node_mock_creates_poster(tmp_path):
     assert result["mock"] is True
     assert result["videoUrl"] == ""
     assert result["posterUrl"].startswith("/files/")
-    file = tmp_path / result["posterUrl"].removeprefix("/files/")
+    file, _ = resolve_existing(ctx.storage, result["posterUrl"])
     assert file.read_bytes()[:4] == b"\x89PNG"

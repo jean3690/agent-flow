@@ -244,7 +244,7 @@ async def _knowledge_search(args: dict[str, Any], config: dict[str, Any], ctx: N
     if not query:
         return "错误：缺少检索语句"
     top_k = int(args.get("top_k") or 4)
-    base_url = ctx.settings.java_service_base_url.rstrip("/")
+    base_url = ctx.settings.platform_service_base_url.rstrip("/")
     try:
         async with httpx.AsyncClient(timeout=20) as client:
             response = await client.post(

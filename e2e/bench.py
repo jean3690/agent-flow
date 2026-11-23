@@ -2,14 +2,14 @@
 """AgentFlow 同步执行入口的并发压测脚本。
 
 默认流程：开始 → 文本模板 → 结束，不调用大模型，测的是
-「Java 执行编排 + SSE 消费 + AI 服务构图 + 落库」这条主链路的开销。
+「平台服务执行编排 + SSE 消费 + AI 服务构图 + 落库」这条主链路的开销。
 
 用法::
 
     python3 e2e/bench.py --concurrency 20 --requests 400
     python3 e2e/bench.py --base-url http://127.0.0.1:8084 --api-key af_xxx
 
-结果默认为本机单实例测量，只代表当前硬件与 H2/MySQL 配置下的表现，
+结果默认为本机单实例测量，只代表当前硬件与 SQLite/MySQL 配置下的表现，
 不能直接当作生产容量结论。
 """
 

@@ -33,11 +33,11 @@ async def execute_node(node: FlowNode, state: FlowState, ctx: NodeContext) -> di
     )
 
     cached = ctx.resume_cache.get(node.id)
-    if isinstance(cached, dict) and cached:
+    if node.type != "input" and isinstance(cached, dict):
         # 断点续跑：命中缓存直接复用上次输出，不再真正执行
         ctx.emit("node_log", nodeId=node.id, level="info", message="复用上次执行结果（断点续跑）")
         ctx.executed.append(node.id)
-        ctx.emit("node_finished", nodeId=node.id, status="success", output=cached, elapsedMs=0)
+        ctx.emit("node_finished", nodeId=node.id, status="success", output=cached, elapsedMs=0, cacheHit=True)
         return {"outputs": {node.id: cached}, "executed": [node.id]}
 
     config = node.config or {}

@@ -17,6 +17,7 @@ from app.core.storage import (
     safe_upload_name,
     save_text,
     save_upload,
+    user_storage,
 )
 from app.graph.context import NodeContext
 from app.nodes.file_nodes import (
@@ -29,13 +30,14 @@ from app.schemas.flow import Flow, FlowNode
 
 
 def _settings(tmp_path) -> Settings:
-    return Settings(file_dir=str(tmp_path / "files"), output_dir=str(tmp_path / "audio"))
+    return user_storage(Settings(file_dir=str(tmp_path / "files"), output_dir=str(tmp_path / "audio")), 1)
 
 
 def _context(tmp_path) -> NodeContext:
     return NodeContext(
         run_id="run-file",
-        settings=_settings(tmp_path),
+        settings=user_storage(_settings(tmp_path), 1),
+        user_id=1,
         flow=Flow(nodes=[], edges=[]),
         bus=EventBus(),
     )
@@ -66,7 +68,7 @@ def test_save_and_read_text_roundtrip(tmp_path):
 
     assert metadata["path"] == "notes/hello.md"
     assert metadata["size"] == len("你好 AgentFlow".encode())
-    assert metadata["url"] == "/files/notes/hello.md"
+    assert metadata["url"] == "/files/users/1/notes/hello.md"
 
     result = read_text(settings, "/api/files/notes/hello.md")
     assert result["text"] == "你好 AgentFlow"

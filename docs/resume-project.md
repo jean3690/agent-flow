@@ -1,20 +1,20 @@
 # AgentFlow：简历项目介绍
 
 > 按「个人项目 / 主要开发者」口吻组织。投递前请按真实参与范围调整职责、补充项目时间与仓库地址；
-> 参考过其他平台的设计思路部分不要写成独立原创。Java 后端岗位优先用第一版。
+> 参考过其他平台的设计思路部分不要写成独立原创。Python 后端岗位优先用第一版。
 
-## 一、Java 后端岗位版（可直接改后粘贴）
+## 一、Python 后端岗位版（可直接改后粘贴）
 
 ### AgentFlow — AI 工作流编排与执行平台
 
-**技术栈：** Java 21、Spring Boot 3.4、MyBatis-Plus、MySQL / H2、Python、FastAPI、LangGraph、Vue 3、TypeScript、SSE、Docker Compose。
+**技术栈：** Python 3.11+、FastAPI、SQLAlchemy、MySQL / SQLite、LangGraph、Vue 3、TypeScript、SSE、Docker Compose。
 
 **项目简介：** 面向知识问答与内容生成场景的可视化 AI 工作流平台，把模型调用、知识检索与工具执行组合成可复用流程。
-采用 Java 业务服务 + Python AI 执行服务的双服务架构，提供工作流编排、版本发布、自动触发、实时调试与多语言 SDK 接入。
+采用 Python 平台服务 + Python AI 执行服务的双服务架构，提供工作流编排、版本发布、自动触发、实时调试与 Python / TypeScript SDK 接入。
 
 **主要工作：**
 
-- 设计 Java / Python 职责边界，以工作流 JSON 与 SSE 事件作为唯一执行契约：Java 负责认证、业务数据与执行留痕，
+- 设计 平台服务 / AI 执行职责边界，以工作流 JSON 与 SSE 事件作为唯一执行契约：平台服务负责认证、业务数据与执行留痕，
   Python 基于 LangGraph 动态构图，支持条件分支、并行合并、子工作流与循环遍历，节点扩展只需新增一个 executor。
 - 实现工作流版本快照、发布 / 回滚与 Cron / Webhook 触发，区分编辑器草稿与触发器发布版本；
   同步调用与流式调用共用同一套执行记录、节点日志和取消语义。
@@ -26,8 +26,8 @@
   修复可枚举 ID 读取他人资源的越权路径。
 - 实现模型凭据 AES-256-GCM 加密、API Key 哈希存储、runId 日志关联、Prometheus 指标与 Token 成本汇总，
   提供执行级排障与资源消耗视角。
-- 建立工程基线：**496 个自动化用例**（AI 281 / Java 109 / 前端 13 / 三种 SDK 93），
-  JaCoCo + pytest-cov 覆盖率门槛接入 CI，并产出可复现的本地压测基线（并发 20：129 req/s、P95 232 ms）。
+- 建立工程基线：**499 个自动化用例**（AI 290+ / 平台服务 100+ / 前端 13 / 两种 SDK 70+），
+  pytest-cov 覆盖率门槛接入 CI，并产出可复现的本地压测基线（并发 20：129 req/s、P95 232 ms）。
 
 > 版面有限时保留第 1、3、4、5、7 条；RAG 与多模态节点留到面试展开。
 
@@ -35,10 +35,10 @@
 
 ### AgentFlow — 基于 LangGraph 的可视化 Agent 工作流平台
 
-**技术栈：** Python、FastAPI、LangGraph、OpenAI 兼容协议、ReAct / Function Calling、RAG、Java Spring Boot、Vue 3、SSE。
+**技术栈：** Python、FastAPI、LangGraph、OpenAI 兼容协议、ReAct / Function Calling、RAG、FastAPI、Vue 3、SSE。
 
 **项目简介：** 把 LLM、RAG 与工具调用封装为可编排节点，支持在画布上构建、执行、调试与发布 AI 应用，
-并通过 REST / 三种语言 SDK 集成到外部系统。
+并通过 REST / Python / TypeScript SDK 集成到外部系统。
 
 **主要工作：**
 
@@ -48,7 +48,7 @@
   以 SKILL.md 摘要 / 详情 / 引用三级加载组织技能上下文。
 - 实现文档导入、分片、Embedding 与检索链路：向量余弦相似度叠加字符 bigram + IDF 词法得分做混合重排，
   无可用向量时自动回退词法检索；另有多路召回 RRF、HyDE、LLM 重排与引用式问答节点。
-- 打通 Python → Java → 前端的节点事件与 token 流，支持实时调试、执行历史、取消与成功节点输出复用；
+- 打通 Python → 平台服务 → 前端的节点事件与 token 流，支持实时调试、执行历史、取消与成功节点输出复用；
   mock 模式可在无模型 Key 时跑通全链路，便于 CI 与演示。
 - 工程化：281 个 AI 服务用例（语句 77% / 分支 81% 覆盖率），CI 覆盖率门槛 70%，
   并提供并发压测脚本量化「SSE + 编排 + 落库」主链路开销。
@@ -58,14 +58,14 @@
 「AgentFlow 是我做的一个 AI 工作流编排项目。它不是只封装一次大模型调用，而是把模型、知识检索和工具操作
 组合成流程，用户可以在画布上配置节点和连线，再运行、调试或发布。
 
-架构上我把平台业务和 AI 执行拆开：Java 负责认证、工作流版本和执行记录，Python 用 LangGraph 构图并调用模型，
+架构上我把平台业务和 AI 执行拆开：平台服务负责认证、工作流版本和执行记录，Python 用 LangGraph 构图并调用模型，
 两边只通过 JSON 和 SSE 对接。这样业务侧不用引入模型 SDK，AI 节点也能独立扩展。
 
 我重点打磨的是执行可靠性。比如排队任务取消后不能再次启动；线程池拒绝或上游断流不能留下永久『运行中』的记录；
 进程被 kill 之后，重启会把遗留的 RUNNING 执行修复成 FAILED，否则这些记录既删不掉也会污染统计。
 多实例部署时 CRON 触发器用数据库租约锁去重，避免同一分钟派发两次；知识库补了资源级归属校验，越权统一返回 404。
 
-工程上目前有 496 个自动化用例，CI 里设置了覆盖率和构建门槛。我也跑了本地压测：3 节点流程、单实例、并发 20 时
+工程上目前有 499 个自动化用例，CI 里设置了覆盖率和构建门槛。我也跑了本地压测：3 节点流程、单实例、并发 20 时
 129 req/s、P95 232 ms，并发到 40 吞吐不再增长，说明瓶颈在执行线程池和数据库写入。
 持久化队列、跨实例取消和崩溃后的节点级日志恢复还没做，这是我下一步要补的部分。」
 
@@ -73,30 +73,30 @@
 
 | 亮点 | 代码入口 | 面试可展开的问题 |
 | --- | --- | --- |
-| 跨语言职责拆分 | `service/ExecutionService.java`、`ai-service/app/graph/runner.py` | 为什么不全 Java 或全 Python？协议变更如何协作？ |
+| 跨语言职责拆分 | `app/services/execution.py`、`ai-service/app/graph/runner.py` | 为什么把平台与执行拆成两套 Python 服务？协议变更如何协作？ |
 | 动态图编排与节点扩展 | `ai-service/app/graph/compiler.py`、`app/nodes/registry.py` | 条件路由、并行状态合并、新节点如何接入？ |
-| 崩溃恢复 | `service/ExecutionRecoveryService.java` | 为什么状态放内存？重启时如何判定「遗留」？恢复失败要不要阻断启动？ |
-| 多实例调度租约 | `service/SchedulerLockService.java`、`TriggerService#fireCron` | 为什么不用 Redis？原子 UPDATE + INSERT 的竞态在哪？租约时长怎么定？ |
-| 资源级归属校验 | `service/KnowledgeBaseService.java`、`ExecutionService#requireRecord` | 为什么越权返回 404 而不是 403？内部调用如何绕过用户上下文？ |
-| 排队取消与异常终态 | `service/ExecutionService.java`、`ExecutionServiceTest.java` | 入队前登记取消句柄解决什么问题？上游未建连接时取消怎么办？ |
-| SSE 增量消费 | `util/SseReader.java`、`sdk/typescript/src/sse.ts` | 跨块 UTF-8 / CRLF 怎么解析？提前退出如何释放连接？ |
-| 发布与版本快照 | `service/WorkflowService.java` | 保存草稿为什么不能影响线上版本？回滚如何保留历史？ |
-| 混合知识检索 | `util/KnowledgeScorer.java`、`KnowledgeBaseService.java` | 词法与语义如何互补？当前实现的规模边界？ |
+| 崩溃恢复 | `app/services/execution.py#recover_stale` | 为什么状态放内存？重启时如何判定「遗留」？恢复失败要不要阻断启动？ |
+| 多实例调度租约 | `app/services/triggers.py#_try_acquire_lock`、`app/services/triggers.py#fire_cron` | 为什么不用 Redis？原子 UPDATE + INSERT 的竞态在哪？租约时长怎么定？ |
+| 资源级归属校验 | `app/services/knowledge.py`、`app/services/execution.py#_require` | 为什么越权返回 404 而不是 403？内部调用如何绕过用户上下文？ |
+| 排队取消与异常终态 | `app/services/execution.py`、`platform-service/tests/` | 入队前登记取消句柄解决什么问题？上游未建连接时取消怎么办？ |
+| SSE 增量消费 | `app/sse.py`、`sdk/typescript/src/sse.ts` | 跨块 UTF-8 / CRLF 怎么解析？提前退出如何释放连接？ |
+| 发布与版本快照 | `app/services/workflows.py` | 保存草稿为什么不能影响线上版本？回滚如何保留历史？ |
+| 混合知识检索 | `app/scoring.py`、`app/services/knowledge.py` | 词法与语义如何互补？当前实现的规模边界？ |
 | 凭据保护与观测 | `CryptoService`、`ApiKeyService`、`ModelPricingService` | 为什么 API Key 哈希、供应商 Key 加密？成本如何估算？ |
 
-表中路径前缀为 `java-service/src/main/java/com/agentflow/`；测试在对应 `src/test/java/com/agentflow/`。
+表中路径相对仓库根目录；测试位于 `platform-service/tests/`。
 
 ## 五、可复现的量化结果
 
 | 指标 | 结果 | 复现方式 |
 | --- | --- | --- |
-| 自动化用例 | 496 个（AI 281 / Java 109 / 前端 13 / Py SDK 47 / TS SDK 25 / Java SDK 21） | `make test` |
+| 自动化用例 | 覆盖 AI、平台、前端与 Python/TypeScript SDK 的完整测试集 | `make test` |
 | AI 服务覆盖率 | 语句 77%、分支 81%（pytest-cov 合计 75%） | `make coverage` |
-| Java 服务覆盖率 | 行 48%、分支 40%，JaCoCo 行覆盖率门槛 40% | `make coverage` |
+| 平台服务覆盖率 | 行 48%、分支 40%，pytest-cov 行覆盖率门槛 40% | `make coverage` |
 | 本地压测 | 并发 20：129 req/s、P95 232 ms；并发 40 饱和在 125 req/s | `make bench` |
 | 整栈冒烟 | 版本发布、触发器、文件、指标、记录清理全部通过 | `make e2e` / `make e2e-service` |
 
-压测与覆盖率的边界见 [性能基线](benchmark.md)：单机、WSL2、H2、无真实模型调用，
+压测与覆盖率的边界见 [性能基线](benchmark.md)：单机、WSL2、SQLite、无真实模型调用，
 不能等同于生产容量；覆盖率反映的是用例触达范围，不代表质量。
 
 ## 六、不要夸大的内容
@@ -106,7 +106,7 @@
 - **没有生产流量**：不写「服务数万用户」「企业级落地」；压测数据必须带「本机单实例」限定。
 - **不是完整多租户**：工作流、执行记录、知识库已做归属校验，但文件中心与模型配置仍共享。
 - **不是分布式高可用**：CRON 有租约去重，但没有持久化队列、跨实例取消路由和崩溃后的节点级日志恢复。
-- **续跑不是完整 checkpoint**：复用成功节点输出，输入或图定义变化不会自动失效。
+- **续跑不是完整 checkpoint**：验证显式执行上下文摘要并保守复用成功节点输出，变化时返回 409；仍不覆盖外部状态变化或副作用 exactly-once。
 - **RAG 不是向量数据库架构**：关系库分片 + 应用侧打分，不写 Milvus / pgvector / ANN。
 - **成本是估算值**：不等同供应商账单；mock 链路通过不代表真实模型质量。
 

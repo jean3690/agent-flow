@@ -89,7 +89,7 @@ class FileReadNodeExecutor(NodeExecutor):
             max_chars = ctx.settings.max_read_chars
 
         try:
-            result = read_text(ctx.settings, path, encoding=encoding, max_chars=max_chars)
+            result = read_text(ctx.storage, path, encoding=encoding, max_chars=max_chars)
         except StorageError as exc:
             raise NodeExecutionError(node.id, str(exc)) from exc
 
@@ -125,7 +125,7 @@ class FileWriteNodeExecutor(NodeExecutor):
 
         try:
             metadata = save_text(
-                ctx.settings,
+                ctx.storage,
                 content,
                 name=path,
                 encoding=encoding,
@@ -165,7 +165,7 @@ class FileListNodeExecutor(NodeExecutor):
         except (TypeError, ValueError):
             limit = 200
         try:
-            items = list_files(ctx.settings, prefix=prefix, limit=limit)
+            items = list_files(ctx.storage, prefix=prefix, limit=limit)
         except StorageError as exc:
             raise NodeExecutionError(node.id, str(exc)) from exc
         text = json.dumps(items, ensure_ascii=False)

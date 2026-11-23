@@ -21,7 +21,7 @@ def _context(mock: bool = True) -> NodeContext:
     return NodeContext(
         run_id="run-rag",
         settings=Settings(mock_mode="always" if mock else "never",
-                          java_service_base_url="http://java.test", internal_token="token"),
+                          platform_service_base_url="http://java.test", internal_token="token"),
         flow=Flow(nodes=[], edges=[]),
         bus=EventBus(),
         workflow_id="42",

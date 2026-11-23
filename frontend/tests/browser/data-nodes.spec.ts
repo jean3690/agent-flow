@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test'
 import { mockEditor } from './fixtures'
 
 // Exercise the real catalog rather than simplified test-only config schemas.
-const definitions = JSON.parse(readFileSync('../java-service/src/main/resources/node-definitions.json', 'utf-8'))
+const definitions = JSON.parse(readFileSync('../platform-service/app/resources/node-definitions.json', 'utf-8'))
 const nodeNames = ['JSON 解析', '字段映射', '列表处理', '文本处理', 'CSV 转换', '日期时间', '数据校验', '编码与摘要', '图片翻译']
 
 for (const name of nodeNames) {

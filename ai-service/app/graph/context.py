@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 
 from app.config import Settings
 from app.core.events import EventBus
+from app.core.storage import user_storage
 from app.mcp_client import McpServerConfig
 from app.schemas.execution import ProviderConfig
 from app.schemas.flow import Flow
@@ -15,17 +16,21 @@ class NodeContext:
     settings: Settings
     flow: Flow
     bus: EventBus
-    # 记忆节点需要归属信息；由 Java 在执行 payload 中下发
+    # 记忆节点需要归属信息；由平台服务在执行 payload 中下发
     workflow_id: str | None = None
     user_id: int | None = None
     providers: dict[str, ProviderConfig] = field(default_factory=dict)
     resume_cache: dict[str, dict] = field(default_factory=dict)
-    # 子工作流 / foreach 循环体由 Java 在提交执行时内联到 payload.subflows
+    # 子工作流 / foreach 循环体由平台服务在提交执行时内联到 payload.subflows
     subflows: dict[str, Flow] = field(default_factory=dict)
     depth: int = 0
     seq: int = 0
     mcp_servers: dict[str, McpServerConfig] = field(default_factory=dict)
     executed: list[str] = field(default_factory=list)
+
+    @property
+    def storage(self) -> Settings:
+        return user_storage(self.settings, self.user_id)
 
     def next_seq(self) -> int:
         self.seq += 1

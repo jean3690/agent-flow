@@ -16,6 +16,7 @@ from app.config import Settings
 from app.core.bailian import api_origin, download_image
 from app.core.errors import NodeExecutionError
 from app.core.events import EventBus
+from app.core.storage import resolve_existing
 from app.graph.context import NodeContext
 from app.main import app
 from app.nodes.image_translate_node import ImageTranslateNodeExecutor
@@ -25,7 +26,7 @@ from app.schemas.flow import Flow, FlowNode
 
 def context(tmp_path, **settings):
     return NodeContext(run_id="translation-test", settings=Settings(_env_file=None, output_dir=str(tmp_path),
-        mock_mode="never", **settings), flow=Flow(nodes=[], edges=[]), bus=EventBus(),
+        mock_mode="never", **settings), flow=Flow(nodes=[], edges=[]), bus=EventBus(), user_id=1,
         providers={"qwen": ProviderConfig(api_key="sk-test-secret", base_url="https://demo.cn-beijing.maas.aliyuncs.com/compatible-mode/v1")})
 
 
@@ -51,7 +52,8 @@ def test_native_origin_and_realtime_workspace():
 
 @pytest.mark.asyncio
 async def test_image_translation_uploads_local_file_and_persists_result(tmp_path, monkeypatch):
-    path = tmp_path / "原图.png"
+    ctx = context(tmp_path)
+    path = ctx.storage.audio_dir / "原图.png"
     Image.new("RGB", (32, 32), "white").save(path)
     requests = []
     def respond(request):
@@ -78,9 +80,9 @@ async def test_image_translation_uploads_local_file_and_persists_result(tmp_path
     monkeypatch.setattr("app.core.bailian._check_url", lambda url: url)
     result = await ImageTranslateNodeExecutor().execute(FlowNode(id="translate", type="image_translate", config={
         "imageUrl": "原图.png", "sourceLang": "zh", "targetLang": "en",
-        "terminologies": '[{"src":"你好","tgt":"hello"}]'}), {"input": {}}, context(tmp_path))
+        "terminologies": '[{"src":"你好","tgt":"hello"}]'}), {"input": {}}, ctx)
     assert result["mock"] is False and result["requestId"] == "request-1"
-    assert (tmp_path / result["imageUrl"].removeprefix("/files/")).read_bytes() == jpeg()
+    assert resolve_existing(ctx.storage, result["imageUrl"])[0].read_bytes() == jpeg()
     assert len(requests) == 4
 
 

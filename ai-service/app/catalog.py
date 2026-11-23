@@ -1,4 +1,4 @@
-"""Node palette metadata served to the Java business service and the editor."""
+"""Node palette metadata served to the platform business service and the editor."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ def _provider_options() -> list[dict]:
 
 
 # 「大模型」节点模型下拉的静态兜底清单。真实清单由 /v1/providers/models 动态拉取，
-# 这里的每一项必须与 java-service 的 node-definitions.json 完全一致（见 test_catalog_sync.py）。
+# 这里的每一项必须与 platform-service 的 node-definitions.json 完全一致（见 test_catalog_sync.py）。
 _STATIC_MODEL_OPTIONS: list[dict] = [
     {"label": "OpenAI / gpt-4o-mini", "value": "gpt-4o-mini", "provider": "openai"},
     {"label": "OpenAI / gpt-4o", "value": "gpt-4o", "provider": "openai"},
@@ -30,7 +30,7 @@ def _model_options() -> list[dict]:
 
 
 # 每个节点类型实际写回 state.outputs[node.id] 的字段（按 app/nodes/*.py 的返回值核实）。
-# 这份声明供配置抽屉生成可引用变量，必须与 java-service 的 node-definitions.json 同步。
+# 这份声明供配置抽屉生成可引用变量，必须与 platform-service 的 node-definitions.json 同步。
 _OUTPUT_FIELDS: dict[str, list[tuple[str, str, str]]] = {
     "input": [("value", "运行时输入", "object")],
     "llm": [
