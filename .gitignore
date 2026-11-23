@@ -1,32 +1,40 @@
-# python
-__pycache__/
-*.py[cod]
-.coverage
-coverage.xml
-htmlcov/
-coverage/
-.venv/
-venv/
-.pytest_cache/
-.ruff_cache/
-*.egg-info/
-dist/
-build/
+# Git 忽略文件配置
 
-# node
-node_modules/
-dist/
-.vite/
-dist-test/
-test-results/
-playwright-report/
-
-# env & runtime
-.env
-.env.local
-*.log
-logs/
-data/
-.DS_Store
+# IDE
 .idea/
 .vscode/
+*.iml
+*.iws
+*.ipr
+
+# Maven
+backend/target/
+backend/.mvn/
+backend/mvnw
+backend/mvnw.cmd
+
+# Node
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# 环境变量
+.env
+.env.local
+.env.*.local
+
+# 日志
+*.log
+logs/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 数据库
+*.db
+*.sqlite
+
+# 临时文件
+*.tmp
+*.temp
