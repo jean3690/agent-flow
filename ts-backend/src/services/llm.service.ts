@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import axios from 'axios';
-import { canonicalizeProvider, firstText, text } from '../common';
+import { ChatOpenAI } from '@langchain/openai';
+import { HumanMessage, SystemMessage, AIMessage, BaseMessage } from '@langchain/core/messages';
+import { canonicalizeProvider, text } from '../common';
 
 const PLACEHOLDER_RE = /\{\{(.*?)\}\}/g;
 
@@ -26,6 +27,20 @@ export function normalizeAgentPlanBase(apiUrl: string | null): string {
   return stripTrailingSlash(value);
 }
 
+/**
+ * ChatOpenAI 会把 /chat/completions 追加到 baseURL 后面，因此这里返回的是 baseURL。
+ */
+function resolveBaseUrl(provider: string, apiUrl: string | null): string {
+  const base = provider === 'volcengine_agent_plan'
+    ? normalizeAgentPlanBase(apiUrl) + '/api/plan/v3'
+    : normalizeChatBase(apiUrl) + '/v1';
+  if (!base || base === '/v1' || base === '/api/plan/v3') {
+    return provider === 'volcengine_agent_plan' ? 'https://ark.cn-beijing.volces.com/api/plan/v3' : 'https://api.openai.com/v1';
+  }
+  return base;
+}
+
+/** 完整请求地址，仅用于日志/展示。 */
 export function chatEndpoint(provider: string, apiUrl: string | null): string {
   if (provider === 'volcengine_agent_plan') {
     return normalizeAgentPlanBase(apiUrl) + '/api/plan/v3/chat/completions';
@@ -40,8 +55,53 @@ export interface ChatResult {
   totalTokens: number;
 }
 
+const APIFREE_MODEL_ALIASES: Record<string, string> = {
+  skyclaw: 'skywork-ai/skyclaw-v1',
+  'skyclaw-v1': 'skywork-ai/skyclaw-v1',
+  'skyclaw-v1.0': 'skywork-ai/skyclaw-v1',
+  'skyclaw-lite': 'skywork-ai/skyclaw-v1-lite',
+  'skyclaw-v1-lite': 'skywork-ai/skyclaw-v1-lite',
+  'skyclaw-v1.0-lite': 'skywork-ai/skyclaw-v1-lite',
+};
+
+function messageText(message: any): string {
+  const content = message?.content;
+  if (typeof content === 'string') return content;
+  if (Array.isArray(content)) {
+    return content.map((item: any) => (typeof item === 'string' ? item : item?.text || '')).join('');
+  }
+  return '';
+}
+
 @Injectable()
 export class LlmService {
+  private createClient(
+    provider: string,
+    apiUrl: string,
+    apiKey: string,
+    model: string,
+    temperature: number,
+  ): ChatOpenAI {
+    return new ChatOpenAI({
+      model,
+      apiKey: apiKey || 'EMPTY',
+      temperature,
+      maxRetries: 1,
+      timeout: 180000,
+      streamUsage: false,
+      configuration: { baseURL: resolveBaseUrl(provider, apiUrl) },
+    });
+  }
+
+  private toMessages(messages: Array<{ role: string; content: string }>): BaseMessage[] {
+    return messages.map((message) => {
+      const content = message.content ?? '';
+      if (message.role === 'system') return new SystemMessage(content);
+      if (message.role === 'assistant') return new AIMessage(content);
+      return new HumanMessage(content);
+    });
+  }
+
   async chat(
     provider: string,
     apiUrl: string,
@@ -51,78 +111,33 @@ export class LlmService {
     messages: Array<{ role: string; content: string }>,
     onChunk?: (chunk: string, accumulated: string) => void,
   ): Promise<ChatResult> {
-    let normalizedProvider = canonicalizeProvider(provider) || provider;
+    const normalizedProvider = canonicalizeProvider(provider) || provider;
     let normalizedModel = model.trim();
     if (normalizedProvider === 'apifree') {
-      const aliases: Record<string, string> = {
-        skyclaw: 'skywork-ai/skyclaw-v1',
-        'skyclaw-v1': 'skywork-ai/skyclaw-v1',
-        'skyclaw-v1.0': 'skywork-ai/skyclaw-v1',
-        'skyclaw-lite': 'skywork-ai/skyclaw-v1-lite',
-        'skyclaw-v1-lite': 'skywork-ai/skyclaw-v1-lite',
-        'skyclaw-v1.0-lite': 'skywork-ai/skyclaw-v1-lite',
-      };
-      normalizedModel = aliases[normalizedModel.toLowerCase()] || normalizedModel;
+      normalizedModel = APIFREE_MODEL_ALIASES[normalizedModel.toLowerCase()] || normalizedModel;
     }
-    const endpoint = chatEndpoint(normalizedProvider, apiUrl);
-    const headers = { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' };
+
+    const client = this.createClient(normalizedProvider, apiUrl, apiKey, normalizedModel, temperature);
+    const lcMessages = this.toMessages(messages);
 
     if (onChunk) {
       let accumulated = '';
-      const response = await axios.post(
-        endpoint,
-        { model: normalizedModel, messages, temperature, stream: true },
-        { headers, responseType: 'stream', timeout: 180000 },
-      );
-      await new Promise<void>((resolve, reject) => {
-        let buffer = '';
-        response.data.on('data', (chunk: Buffer) => {
-          buffer += chunk.toString('utf8');
-          let index: number;
-          while ((index = buffer.indexOf('\n')) >= 0) {
-            const line = buffer.slice(0, index).trim();
-            buffer = buffer.slice(index + 1);
-            if (!line.startsWith('data:')) continue;
-            const payload = line.slice(5).trim();
-            if (payload === '[DONE]') continue;
-            try {
-              const json = JSON.parse(payload);
-              const delta = json.choices?.[0]?.delta?.content;
-              if (delta) {
-                accumulated += delta;
-                onChunk(delta, accumulated);
-              }
-            } catch {
-              // ignore malformed chunk
-            }
-          }
-        });
-        response.data.on('end', resolve);
-        response.data.on('error', reject);
-      });
+      const stream = await client.stream(lcMessages);
+      for await (const chunk of stream) {
+        const delta = chunk.text;
+        if (!delta) continue;
+        accumulated += delta;
+        onChunk(delta, accumulated);
+      }
       return { content: accumulated, inputTokens: 0, outputTokens: 0, totalTokens: 0 };
     }
 
-    const response = await axios.post(
-      endpoint,
-      { model: normalizedModel, messages, temperature, stream: false },
-      { headers, timeout: 180000, transformResponse: [(data) => data] },
-    );
-    let payload: any;
-    try {
-      payload = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
-    } catch {
-      throw new Error(`LLM 返回内容无法解析: ${String(response.data).slice(0, 300)}`);
-    }
-    const rawContent = payload?.choices?.[0]?.message?.content;
-    let content = '';
-    if (typeof rawContent === 'string') content = rawContent;
-    else if (Array.isArray(rawContent)) content = rawContent.map((item) => item?.text || '').join('');
-    const usage = payload?.usage || {};
-    const inputTokens = Number(usage.prompt_tokens ?? usage.input_tokens ?? 0) || 0;
-    const outputTokens = Number(usage.completion_tokens ?? usage.output_tokens ?? 0) || 0;
-    const totalTokens = Number(usage.total_tokens ?? inputTokens + outputTokens) || 0;
-    return { content, inputTokens, outputTokens, totalTokens };
+    const response = await client.invoke(lcMessages);
+    const usage: any = response.usage_metadata;
+    const inputTokens = Number(usage?.input_tokens ?? 0) || 0;
+    const outputTokens = Number(usage?.output_tokens ?? 0) || 0;
+    const totalTokens = Number(usage?.total_tokens ?? inputTokens + outputTokens) || 0;
+    return { content: messageText(response), inputTokens, outputTokens, totalTokens };
   }
 
   processTemplate(template: string | null | undefined, inputParams: any[], input: Record<string, any>): string {

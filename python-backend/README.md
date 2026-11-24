@@ -11,8 +11,8 @@ Java 后端仍保留在仓库中，未删除；切换时停掉 Java 进程，用
 | Web | Spring Boot 3.4 + Spring MVC | FastAPI + Uvicorn |
 | 数据访问 | MyBatis-Plus | SQLAlchemy 2.x + PyMySQL |
 | 鉴权 | JJWT + Redis | PyJWT（HS256/384/512 按密钥长度选择）+ Redis（不可用时内存降级） |
-| LLM | Spring AI ChatClient | OpenAI 兼容 HTTP 客户端（httpx） |
-| 工作流 | 自研 DAG + LangGraph4j | 自研 DAG + 等价顺序状态图引擎 |
+| LLM | Spring AI ChatClient | OpenAI 官方 SDK（`openai`，自定义 `base_url` 兼容各厂商） |
+| 工作流 | 自研 DAG + LangGraph4j | 自研 DAG + `langgraph` 状态图引擎 |
 | 对象存储 | MinIO SDK | minio Python SDK |
 | 文档 | SpringDoc | FastAPI OpenAPI（`/docs`） |
 
@@ -106,7 +106,7 @@ python-backend/
 │   ├── db.py / models.py       # SQLAlchemy 会话与全部数据模型
 │   ├── security.py             # JWT、刷新令牌存储
 │   ├── serializers.py          # 实体 -> 前端响应结构
-│   ├── engine.py               # DAG 引擎、断点续跑、LangGraph 等价引擎、SSE 事件
+│   ├── engine.py               # DAG 引擎、断点续跑、LangGraph 状态图引擎、SSE 事件
 │   ├── executors.py            # 节点执行器（IO/条件/LLM/ReAct/TTS/图片/视频/记忆/知识库/搜索）
 │   ├── llm.py                  # OpenAI 兼容 Chat 调用与提示词模板
 │   ├── tts.py                  # 通义千问 / StepAudio TTS 与 WAV 合并
@@ -142,7 +142,7 @@ SSE 事件名与负载：`WORKFLOW_START`、`NODE_START`、`NODE_SUCCESS`、`NOD
 - JWT 算法按密钥字节数选择 HS256/HS384/HS512，与 JJWT 的 `Keys.hmacShaKeyFor` 行为一致；在同一个 `JWT_SECRET` 下两版签发的令牌可互相验证。
 - 刷新令牌优先存 Redis；Redis 不可用时降级到进程内存储（重启后失效），便于本地开发。
 - Agent 长期记忆与 Java 版一样是进程内实现（非数据库持久化）。
-- LangGraph 引擎使用等价的顺序状态图实现，支持拓扑执行、节点输出状态传递、失败继续执行与事件推送，并保留 `engineType=langgraph` 的路由行为。
+- LangGraph 引擎基于 `langgraph` 的 `StateGraph`：普通连线用 `add_edge`，条件节点用 `add_conditional_edges` 按 `sourceHandle` 路由，保留 `engineType=langgraph` 的对外行为。
 - 逻辑删除、时间格式（`yyyy-MM-dd HH:mm:ss`）、空字段跳过更新、默认配置切换等细节均按 Java 版语义处理。
 - 数值型 `temperature` 以 `Numeric(3,2)` 存储并输出为浮点数。
 

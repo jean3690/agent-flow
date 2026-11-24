@@ -766,20 +766,66 @@ select {
 }
 
 .workflow-minimap {
-  width: 154px !important;
-  height: 118px !important;
+  width: 136px !important;
+  height: 100px !important;
   overflow: hidden;
   border: 1px solid #dbe5f2;
   border-radius: 8px;
-  background: #ffffff !important;
+  background: rgba(255, 255, 255, 0.92) !important;
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
 }
 
-.react-flow__pane {
+/* 缩略图收起后的入口按钮，放在右上角，避开流程图向右下生长的主区域 */
+.workflow-minimap-toggle {
+  position: absolute;
+  right: 16px;
+  top: 16px;
+  z-index: 6;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid #dbe5f2;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.94);
+  color: #475569;
+  font-size: 12px;
+  font-weight: 650;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+  cursor: pointer;
+}
+
+.workflow-minimap-toggle:hover {
+  border-color: #92b5f5;
+  color: #1d4ed8;
+}
+
+.workflow-minimap-close {
+  position: absolute;
+  right: 16px;
+  bottom: 122px;
+  z-index: 6;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #dbe5f2;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.94);
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.workflow-minimap-close:hover {
+  border-color: #92b5f5;
+  color: #1d4ed8;
+}
+
+.vue-flow__pane {
   cursor: default;
 }
 
-.react-flow__attribution {
+.vue-flow__attribution {
   display: none;
 }
 

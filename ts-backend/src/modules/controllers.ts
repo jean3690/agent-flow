@@ -239,7 +239,7 @@ export class NodeTypesController {
 
   @Get()
   async list() {
-    const hidden = new Set(['react_agent', 'web_search', 'web_fetch', 'vision_analyze', 'memory_write', 'memory_retrieve', 'knowledge_upsert', 'knowledge_retrieve']);
+    const hidden = new Set(['web_search', 'web_fetch', 'vision_analyze', 'memory_write', 'memory_retrieve', 'knowledge_upsert', 'knowledge_retrieve']);
     const map = new Map<string, NodeDefinition>();
     for (const row of await this.repo().find({ where: { deleted: 0 } as any, order: { id: 'ASC' } })) map.set(row.nodeType, row);
     const generic = (type: string, displayName: string, category: string, icon: string, input: string, output: string, config: string) => ({
@@ -247,6 +247,7 @@ export class NodeTypesController {
     });
     const defaults: any[] = [
       generic('llm', '大模型', 'LLM', '🤖', '{"type":"object","properties":{"input":{"type":"string"}}}', '{"type":"object","properties":{"output":{"type":"string"}}}', '{"type":"object","properties":{}}'),
+      generic('react_agent', '智能体', 'LLM', 'AG', '{"type":"object","properties":{"input":{"type":"string"}}}', '{"type":"object","properties":{"output":{"type":"string"},"finalAnswer":{"type":"string"},"toolTrace":{"type":"array"},"steps":{"type":"number"},"tokens":{"type":"number"}}}', '{"type":"object","properties":{"provider":{"type":"string"},"configId":{"type":"number"},"apiKey":{"type":"string"},"model":{"type":"string"},"prompt":{"type":"string"},"temperature":{"type":"number","default":0.7},"maxSteps":{"type":"number","default":5},"tools":{"type":"array"},"memoryEnabled":{"type":"boolean","default":false},"knowledgeBaseId":{"type":"string"}}}'),
       generic('memory_write', '写入记忆', 'MEMORY', 'MW', '{}', '{}', '{}'),
       generic('memory_retrieve', '召回记忆', 'MEMORY', 'MR', '{}', '{}', '{}'),
       generic('knowledge_upsert', '写入知识库', 'KNOWLEDGE', 'KU', '{}', '{}', '{}'),
@@ -255,7 +256,12 @@ export class NodeTypesController {
       generic('video_generate', '视频生成', 'TOOL', 'VID', '{}', '{}', '{}'),
     ];
     for (const node of defaults) if (!map.has(node.nodeType)) map.set(node.nodeType, node as any);
-    const result = [...map.values()].filter((node) => !hidden.has(node.nodeType) && (node.category !== 'LLM' || node.nodeType === 'llm'));
+    const reactAgent = map.get('react_agent');
+    if (reactAgent) {
+      reactAgent.displayName = '智能体';
+      reactAgent.category = 'LLM';
+    }
+    const result = [...map.values()].filter((node) => !hidden.has(node.nodeType) && (node.category !== 'LLM' || node.nodeType === 'llm' || node.nodeType === 'react_agent'));
     return ok(result.map((node) => nodeMap(node)));
   }
 }

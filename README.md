@@ -12,7 +12,7 @@
 [![Spring AI](https://img.shields.io/badge/Spring%20AI-1.0.0--M5-green.svg)](https://spring.io/projects/spring-ai)
 [![Spring AI Alibaba](https://img.shields.io/badge/Spring%20AI%20Alibaba-1.0.0--M6.1-orange.svg)](https://java2ai.com)
 [![LangGraph4j](https://img.shields.io/badge/LangGraph4j-1.8.0--beta3-purple.svg)](https://github.com/bsorrentino/langgraph4j)
-[![React](https://img.shields.io/badge/React-18.x-61dafb.svg)](https://reactjs.org/)
+[![Vue](https://img.shields.io/badge/Vue-3.5-42b883.svg)](https://vuejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
 [![Python](https://img.shields.io/badge/Python-3.12+-blue.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009485.svg)](https://fastapi.tiangolo.com/)
@@ -79,7 +79,7 @@ AgentFlow 是一个**企业级的 AI 工作流可视化编排平台**，让 AI �
 
 ### 可视化流程编辑器
 
-基于 ReactFlow 构建的专业流程图编辑器，支持节点拖拽、连线配置、参数编辑等完整功能。
+基于 Vue Flow 构建的专业流程图编辑器，支持节点拖拽、连线配置、参数编辑等完整功能。
 
 ### 多大模型节点支持
 
@@ -134,7 +134,7 @@ AgentFlow 是一个**企业级的 AI 工作流可视化编排平台**，让 AI �
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                      前端层 (Frontend)                    │
-│  React 18 + TypeScript + ReactFlow + Ant Design         │
+│  Vue 3 + TypeScript + Vue Flow + Ant Design Vue         │
 │  • 可视化编辑器  • 节点面板  • 调试工具                    │
 └────────────────────┬────────────────────────────────────┘
                      │ REST API / SSE
@@ -180,9 +180,9 @@ AgentFlow 是一个**企业级的 AI 工作流可视化编排平台**，让 AI �
 </tr>
 <tr>
 <td rowspan="6"><b>前端</b></td>
-<td>React</td>
-<td>18.x</td>
-<td>现代化 UI 框架</td>
+<td>Vue</td>
+<td>3.5.x</td>
+<td>渐进式 UI 框架</td>
 </tr>
 <tr>
 <td>TypeScript</td>
@@ -191,23 +191,23 @@ AgentFlow 是一个**企业级的 AI 工作流可视化编排平台**，让 AI �
 </tr>
 <tr>
 <td>Vite</td>
-<td>5.x</td>
+<td>6.x</td>
 <td>高性能构建工具</td>
 </tr>
 <tr>
-<td>ReactFlow</td>
+<td>Vue Flow</td>
 <td>最新版</td>
 <td>专业流程图库</td>
 </tr>
 <tr>
-<td>Ant Design + Tailwind CSS</td>
+<td>Ant Design Vue + Tailwind CSS</td>
 <td>-</td>
 <td>企业级 UI 组件</td>
 </tr>
 <tr>
-<td>Zustand</td>
+<td>Pinia</td>
 <td>最新版</td>
-<td>轻量级状态管理</td>
+<td>Vue 官方状态管理</td>
 </tr>
 <tr>
 <td rowspan="6"><b>后端</b></td>
@@ -395,24 +395,29 @@ AgentFlow/
 │   │                   └── voice-guide.md
 │   └── pom.xml                  # Maven 依赖配置
 │
-├── frontend/                     # React 前端应用
+├── frontend/                     # Vue 3 前端应用
 │   ├── src/
 │   │   ├── components/          # 🎨 核心组件
-│   │   │   ├── FlowCanvas.tsx   # ReactFlow 流程编辑器
-│   │   │   ├── NodePanel.tsx    # 可拖拽节点面板
-│   │   │   ├── DebugDrawer.tsx  # 调试抽屉面板
-│   │   │   ├── AudioPlayer.tsx  # 音频播放器
-│   │   │   └── SkillSelector.tsx # 🆕 技能选择器
+│   │   │   ├── FlowCanvas.vue   # Vue Flow 流程编辑器
+│   │   │   ├── WorkflowNodeCard.vue # 自定义流程节点
+│   │   │   ├── NodePanel.vue    # 可拖拽节点面板
+│   │   │   ├── DebugDrawer.vue  # 调试抽屉面板
+│   │   │   ├── AudioPlayer.vue  # 音频播放器
+│   │   │   └── SkillSelector.vue # 🆕 技能选择器
 │   │   ├── pages/               # 页面组件
-│   │   │   ├── LoginPage.tsx    # 登录页
-│   │   │   ├── MainPage.tsx     # 工作流列表页
-│   │   │   └── EditorPage.tsx   # 工作流编辑器页
-│   │   ├── store/               # Zustand 状态管理
-│   │   │   ├── authStore.ts     # 用户认证状态
-│   │   │   └── workflowStore.ts # 工作流编辑状态
+│   │   │   ├── LoginPage.vue    # 登录页
+│   │   │   ├── EditorPage.vue   # 工作流编辑器页
+│   │   │   ├── KnowledgePage.vue # 知识库管理页
+│   │   │   └── McpToolPage.vue  # MCP 工具页
+│   │   ├── router/              # Vue Router 路由
+│   │   ├── stores/              # Pinia 状态管理
+│   │   │   ├── auth.ts          # 用户认证状态
+│   │   │   ├── workflow.ts      # 工作流编辑状态
+│   │   │   └── llmConfig.ts     # 全局模型配置状态
 │   │   ├── api/                 # API 调用层
 │   │   ├── utils/               # 工具函数
-│   │   └── App.tsx              # 应用入口
+│   │   ├── App.vue              # 根组件
+│   │   └── main.ts              # 应用入口
 │   ├── package.json             # NPM 依赖配置
 │   ├── Dockerfile               # 前端镜像（Nginx 托管 + /api 反代）
 │   ├── nginx.conf               # Nginx 配置（含 SSE 支持）
@@ -938,7 +943,7 @@ const customNode = {
 ### 代码规范
 
 - **后端**：遵循阿里巴巴 Java 开发手册
-- **前端**：遵循 Airbnb React/JSX 风格指南
+- **前端**：遵循 Vue 官方风格指南（SFC + TypeScript）
 - **提交信息**：使用约定式提交（Conventional Commits）
 
 ## 💬 社区与支持

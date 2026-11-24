@@ -3,8 +3,9 @@ from __future__ import annotations
 import json
 import logging
 import time
-from typing import Any, Callable, Optional
+from typing import Annotated, Any, Callable, Optional, TypedDict
 
+from langgraph.graph import END, START, StateGraph
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -720,158 +721,228 @@ def _resume_state() -> dict:
     }
 
 
+def _merge_node_outputs(left: Optional[dict], right: Optional[dict]) -> dict:
+    return {**(left or {}), **(right or {})}
+
+
+def _replace_value(_left: Any, right: Any) -> Any:
+    return right
+
+
+class WorkflowGraphState(TypedDict, total=False):
+    currentInput: Annotated[dict, _replace_value]
+    nodeOutputs: Annotated[dict, _merge_node_outputs]
+
+
 class LangGraphEngine:
     engine_type = "langgraph"
 
     def execute(self, db: Session, workflow, input_data: str, on_event: EventCallback = None) -> dict:
         start_time = time.time()
-        status = "SUCCESS"
-        error_message: Optional[str] = None
         if on_event:
             on_event(events.workflow_start(None))
+
+        failure: dict[str, Optional[str]] = {"message": None}
+        node_results: list[dict] = []
+        status = "SUCCESS"
+        error_message: Optional[str] = None
 
         try:
             config = parse_workflow(workflow.flow_data)
             nodes = config["nodes"]
             edges = config["edges"]
-            ordered_nodes = self._reachable_nodes(nodes, edges)
-            state = {
-                "inputData": input_data,
-                "currentInput": {"input": input_data},
-                "nodeOutputs": {},
-                "status": "RUNNING",
-            }
+            sorted_nodes = topological_sort(nodes, edges)
+            edges_by_source, edges_by_target = _build_edge_indexes(edges)
+            node_map = {str(node.get("id")): node for node in sorted_nodes}
+            targets = {str(edge.get("target")) for edge in edges}
+            entries = [node for node in sorted_nodes if str(node.get("id")) not in targets]
+            if not entries:
+                entries = sorted_nodes[:1]
 
-            for node in ordered_nodes:
-                node_start = time.time()
-                if on_event:
-                    on_event(events.node_start(node["id"], str(node.get("type"))))
-                current_input = state["currentInput"]
-                if node.get("type") == "output":
-                    current_input = dict(current_input)
-                    current_input["__nodeOutputs__"] = state["nodeOutputs"]
-                try:
-                    executor = executors.get_executor(str(node.get("type")))
-                    progress = None
-                    if on_event:
-                        def progress(message: str, data: Any) -> None:
-                            on_event(events.node_progress(node["id"], str(node.get("type")), message, data))
+            reachable = self._reachable_ids(entries, edges_by_source)
+            graph_nodes = [node for node in sorted_nodes if str(node.get("id")) in reachable]
 
-                    output = executor.execute(db, node, current_input, progress)
-                    duration = int((time.time() - node_start) * 1000)
-                    state["nodeOutputs"][str(node["id"])] = output
-                    state["currentInput"] = output
-                    if on_event:
-                        on_event(
-                            events.node_success(
-                                node["id"],
-                                str(node.get("type")),
-                                {"input": current_input, "output": output, "duration": duration},
-                                duration,
-                            )
-                        )
-                except Exception as exc:
-                    logger.exception("LangGraph 节点执行失败: %s", node.get("id"))
-                    state["status"] = "FAILED"
-                    state["errorMessage"] = f"节点 {node.get('id')} 执行失败: {exc}"
-                    if on_event:
-                        on_event(events.node_error(node["id"], str(node.get("type")), str(exc)))
+            graph = StateGraph(WorkflowGraphState)
+            for node in graph_nodes:
+                graph.add_node(str(node.get("id")), self._node_action(
+                    node, db, input_data, edges_by_target, node_results, failure, on_event,
+                ))
 
-            if state["status"] not in ("SUCCESS", "RUNNING"):
-                status = "FAILED"
-                error_message = state.get("errorMessage")
+            for node in graph_nodes:
+                node_id = str(node.get("id"))
+                outgoing = [
+                    edge for edge in edges_by_source.get(node_id, [])
+                    if str(edge.get("target")) in reachable
+                ]
+                if str(node.get("type")) == "condition" and any(edge.get("sourceHandle") for edge in outgoing):
+                    branches: dict[str, list[str]] = {}
+                    path_map: dict[str, Any] = {"__stop__": END}
+                    for edge in outgoing:
+                        branch_key = edge.get("sourceHandle") or "default"
+                        branches.setdefault(branch_key, []).append(str(edge.get("target")))
+                        path_map[str(edge.get("target"))] = str(edge.get("target"))
+                    graph.add_conditional_edges(
+                        node_id,
+                        self._branch_router(node_id, branches),
+                        path_map,
+                    )
+                elif outgoing:
+                    for edge in outgoing:
+                        graph.add_edge(node_id, str(edge.get("target")))
+                else:
+                    graph.add_edge(node_id, END)
 
-            final_output = state["currentInput"]
-            output_data_json = jdump(final_output)
-            node_results = self._extract_node_results(state, nodes)
-            duration = int((time.time() - start_time) * 1000)
+            for entry in entries:
+                graph.add_edge(START, str(entry.get("id")))
 
-            record = ExecutionRecord()
-            record.flow_id = workflow.id
-            record.input_data = jdump({"input": input_data})
-            record.output_data = output_data_json
-            record.status = status
-            record.node_results = jdump(node_results)
-            record.error_message = error_message
-            record.duration = duration
-            record.executed_at = now()
-            record.deleted = 0
-            db.add(record)
-            db.commit()
-            db.refresh(record)
-
-            if on_event:
-                on_event(events.workflow_complete(status, final_output, duration))
-
-            return {
-                "executionId": record.id,
-                "status": status,
-                "inputData": record.input_data,
-                "nodeResults": node_results,
-                "outputData": output_data_json,
-                "duration": duration,
-                "errorMessage": None,
-            }
+            app = graph.compile()
+            final_state = app.invoke(
+                {"currentInput": {"input": input_data}, "nodeOutputs": {}},
+                {"recursion_limit": max(50, len(graph_nodes) * 2 + 10)},
+            )
         except Exception as exc:
             logger.exception("LangGraph 工作流执行失败")
-            duration = int((time.time() - start_time) * 1000)
-            record = ExecutionRecord()
-            record.flow_id = workflow.id
-            record.input_data = jdump({"input": input_data})
-            record.status = "FAILED"
-            record.error_message = str(exc)
-            record.duration = duration
-            record.executed_at = now()
-            record.deleted = 0
-            db.add(record)
-            db.commit()
-            db.refresh(record)
-            if on_event:
-                on_event(events.workflow_complete("FAILED", str(exc), duration))
-            return {
-                "executionId": record.id,
-                "status": "FAILED",
-                "inputData": record.input_data,
-                "nodeResults": [],
-                "outputData": None,
-                "duration": duration,
-                "errorMessage": str(exc),
-            }
+            status = "FAILED"
+            error_message = failure["message"] or str(exc)
+            final_state = {"currentInput": {"input": input_data}, "nodeOutputs": {}}
+
+        node_outputs = final_state.get("nodeOutputs") or {}
+        output_node = next(
+            (node for node in sorted_nodes if str(node.get("type")) == "output" and node_outputs.get(str(node.get("id")))),
+            None,
+        )
+        last_node = next(
+            (node for node in reversed(sorted_nodes) if node_outputs.get(str(node.get("id")))),
+            None,
+        )
+        chosen = output_node or last_node
+        final_output = node_outputs.get(str(chosen.get("id"))) if chosen else final_state.get("currentInput") or {}
+        final_output = strip_runtime_fields(final_output)
+        output_data_json = jdump(final_output)
+        duration = int((time.time() - start_time) * 1000)
+
+        record = ExecutionRecord()
+        record.flow_id = workflow.id
+        record.input_data = jdump({"input": input_data})
+        record.output_data = output_data_json
+        record.status = status
+        record.node_results = jdump(node_results)
+        record.error_message = error_message
+        record.duration = duration
+        record.executed_at = now()
+        record.deleted = 0
+        db.add(record)
+        db.commit()
+        db.refresh(record)
+
+        if on_event:
+            on_event(events.workflow_complete(status, final_output, duration))
+
+        return {
+            "executionId": record.id,
+            "status": status,
+            "inputData": record.input_data,
+            "nodeResults": node_results,
+            "outputData": output_data_json,
+            "duration": duration,
+            "errorMessage": error_message,
+        }
 
     @staticmethod
-    def _reachable_nodes(nodes: list[dict], edges: list[dict]) -> list[dict]:
-        sorted_nodes = topological_sort(nodes, edges)
-        if not nodes:
-            return []
-        targets = {edge.get("target") for edge in edges}
-        entry = next((node for node in nodes if node["id"] not in targets), nodes[0])
-        adjacency: dict[str, list[str]] = {}
-        for edge in edges:
-            adjacency.setdefault(edge.get("source"), []).append(edge.get("target"))
+    def _reachable_ids(entries: list[dict], edges_by_source: dict[str, list[dict]]) -> set[str]:
         reachable: set[str] = set()
-        stack = [entry["id"]]
+        stack = [str(node.get("id")) for node in entries]
         while stack:
             node_id = stack.pop()
             if node_id in reachable:
                 continue
             reachable.add(node_id)
-            stack.extend(adjacency.get(node_id, []))
-        return [node for node in sorted_nodes if node["id"] in reachable]
+            for edge in edges_by_source.get(node_id, []):
+                stack.append(str(edge.get("target")))
+        return reachable
 
     @staticmethod
-    def _extract_node_results(state: dict, nodes: list[dict]) -> list[dict]:
-        node_id_to_name = {str(node["id"]): node.get("type") for node in nodes}
-        results: list[dict] = []
-        for node_id, output in state["nodeOutputs"].items():
-            results.append(
-                {
-                    "nodeId": node_id,
-                    "nodeName": node_id_to_name.get(node_id, node_id),
-                    "status": "SUCCESS",
-                    "output": jdump(output),
-                }
-            )
-        return results
+    def _branch_router(node_id: str, branches: dict[str, list[str]]):
+        def route(state: dict) -> list[str]:
+            output = (state.get("nodeOutputs") or {}).get(node_id) or {}
+            branch = output.get("__selectedBranch__") if isinstance(output, dict) else None
+            if not isinstance(branch, str) or not branch:
+                branch = "default"
+            return branches.get(branch) or ["__stop__"]
+
+        return route
+
+    @staticmethod
+    def _node_action(
+        node: dict,
+        db: Session,
+        input_data: str,
+        edges_by_target: dict[str, list[dict]],
+        node_results: list[dict],
+        failure: dict[str, Optional[str]],
+        on_event: EventCallback,
+    ):
+        def action(state: dict) -> dict:
+            node_id = str(node.get("id"))
+            node_type = str(node.get("type"))
+            node_start = time.time()
+            node_outputs = state.get("nodeOutputs") or {}
+            node_input = _resolve_node_input(node, node_outputs, edges_by_target, {"input": input_data})
+            if node_type == "output":
+                node_input = {**node_input, "__nodeOutputs__": node_outputs}
+
+            if on_event:
+                on_event(events.node_start(node_id, node_type))
+
+            progress = None
+            if on_event:
+                def progress(message: str, data: Any, _id: str = node_id, _type: str = node_type) -> None:
+                    on_event(events.node_progress(_id, _type, message, data))
+
+            try:
+                executor = executors.get_executor(node_type)
+                output = executor.execute(db, node, node_input, progress)
+                duration = int((time.time() - node_start) * 1000)
+                node_results.append(
+                    {
+                        "nodeId": node_id,
+                        "nodeName": node_type,
+                        "status": "SUCCESS",
+                        "input": jdump(strip_runtime_fields(node_input)),
+                        "output": jdump(output),
+                        "duration": duration,
+                        "error": None,
+                    }
+                )
+                if on_event:
+                    on_event(
+                        events.node_success(
+                            node_id,
+                            node_type,
+                            {"input": strip_runtime_fields(node_input), "output": output, "duration": duration},
+                            duration,
+                        )
+                    )
+                return {"nodeOutputs": {node_id: output}, "currentInput": output}
+            except Exception as exc:
+                duration = int((time.time() - node_start) * 1000)
+                failure["message"] = f"节点 {node_id} 执行失败: {exc}"
+                node_results.append(
+                    {
+                        "nodeId": node_id,
+                        "nodeName": node_type,
+                        "status": "FAILED",
+                        "input": jdump(strip_runtime_fields(node_input)),
+                        "output": None,
+                        "duration": duration,
+                        "error": str(exc),
+                    }
+                )
+                if on_event:
+                    on_event(events.node_error(node_id, node_type, str(exc)))
+                raise
+
+        return action
 
 
 dag_engine = DagEngine()

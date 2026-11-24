@@ -1,28 +1,28 @@
-import js from '@eslint/js'
-import globals from 'globals'
-import reactHooks from 'eslint-plugin-react-hooks'
-import reactRefresh from 'eslint-plugin-react-refresh'
+import pluginVue from 'eslint-plugin-vue'
 import tseslint from 'typescript-eslint'
+import globals from 'globals'
 
 export default tseslint.config(
-  { ignores: ['dist'] },
+  { ignores: ['dist', 'node_modules'] },
+  ...tseslint.configs.recommended,
+  ...pluginVue.configs['flat/essential'],
   {
-    extends: [js.configs.recommended, ...tseslint.configs.recommended],
-    files: ['**/*.{ts,tsx}'],
+    files: ['**/*.vue'],
     languageOptions: {
-      ecmaVersion: 2020,
       globals: globals.browser,
+      parserOptions: {
+        parser: tseslint.parser,
+        extraFileExtensions: ['.vue'],
+        sourceType: 'module',
+      },
     },
-    plugins: {
-      'react-hooks': reactHooks,
-      'react-refresh': reactRefresh,
-    },
+  },
+  {
+    files: ['**/*.{ts,vue}'],
     rules: {
-      ...reactHooks.configs.recommended.rules,
-      'react-refresh/only-export-components': [
-        'warn',
-        { allowConstantExport: true },
-      ],
+      '@typescript-eslint/no-explicit-any': 'off',
+      'vue/multi-word-component-names': 'off',
+      'vue/no-v-html': 'off',
     },
   },
 )

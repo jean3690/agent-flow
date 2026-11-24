@@ -1,4 +1,5 @@
 import { spawn, ChildProcess } from 'child_process';
+import * as http from 'http';
 import path from 'path';
 
 const PORT = 18085;
@@ -59,14 +60,30 @@ async function main(): Promise<void> {
   child.stdout?.on('data', (chunk) => process.stdout.write(`[server] ${chunk}`));
   child.stderr?.on('data', (chunk) => process.stderr.write(`[server] ${chunk}`));
 
+    const stub = http.createServer((req, res) => {
+      req.resume();
+      req.on('end', () => {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          id: 'stub', object: 'chat.completion', created: 1, model: 'stub',
+          choices: [{ index: 0, message: { role: 'assistant', content: JSON.stringify({ action: 'final_answer', reasoningSummary: 'done', finalAnswer: 'agent-ok' }) }, finish_reason: 'stop' }],
+          usage: { prompt_tokens: 5, completion_tokens: 6, total_tokens: 11 },
+        }));
+      });
+    });
+
   try {
     await waitForServer(child);
 
     const nodeTypes = await request('GET', '/api/node-types');
     const types = (nodeTypes.json?.data || []).map((item: any) => item.nodeType);
     check('node-types no auth', nodeTypes.status === 200 && nodeTypes.json.code === 200);
-    check('node-types hides react_agent', !types.includes('react_agent'));
     check('node-types has llm', types.includes('llm'));
+    const agentType = (nodeTypes.json?.data || []).find((item: any) => item.nodeType === 'react_agent');
+    check('node-types exposes agent', Boolean(agentType) && agentType.displayName === '智能体', JSON.stringify(agentType || null));
+
+    await new Promise<void>((resolve) => stub.listen(0, '127.0.0.1', () => resolve()));
+    const stubPort = (stub.address() as any).port;
 
     const unauthorized = await request('GET', '/api/workflows');
     check('workflows requires auth', unauthorized.status === 401);
@@ -94,6 +111,37 @@ async function main(): Promise<void> {
     check('execute workflow', executed.json?.code === 200 && result.status === 'SUCCESS', executed.text.slice(0, 400));
     check('execute output', JSON.parse(result.outputData || '{}').output === 'hello', String(result.outputData));
     check('execute node results', (result.nodeResults || []).length === 2);
+
+    const graphFlow = {
+      nodes: [
+        { id: 'gi', type: 'input', data: { type: 'input', label: '输入' } },
+        {
+          id: 'gc',
+          type: 'condition',
+          data: { type: 'condition', label: '条件', conditions: [{ id: 'yes', field: 'input', operator: 'eq', value: 'hello' }] },
+        },
+        { id: 'gy', type: 'output', data: { type: 'output', label: '是' } },
+        { id: 'gn', type: 'output', data: { type: 'output', label: '否' } },
+      ],
+      edges: [
+        { id: 'ge1', source: 'gi', target: 'gc' },
+        { id: 'ge2', source: 'gc', target: 'gy', sourceHandle: 'yes' },
+        { id: 'ge3', source: 'gc', target: 'gn', sourceHandle: 'no' },
+      ],
+    };
+    const graphCreated = await request('POST', '/api/workflows', {
+      name: 'smoke-langgraph',
+      flowData: JSON.stringify(graphFlow),
+      engineType: 'langgraph',
+    }, token);
+    const graphId = graphCreated.json?.data?.id;
+    check('create langgraph workflow', graphCreated.json?.code === 200 && graphId > 0, graphCreated.text.slice(0, 300));
+    const graphExecuted = await request('POST', `/api/workflows/${graphId}/execute`, { inputData: 'hello' }, token);
+    const graphResult = graphExecuted.json?.data || {};
+    check('langgraph execute', graphResult.status === 'SUCCESS', graphExecuted.text.slice(0, 500));
+    check('langgraph branch output', JSON.parse(graphResult.outputData || '{}').output === 'hello', String(graphResult.outputData));
+    check('langgraph skips other branch', (graphResult.nodeResults || []).length === 3, String((graphResult.nodeResults || []).length));
+    await request('DELETE', `/api/workflows/${graphId}`, undefined, token);
 
     const latest = await request('GET', `/api/workflows/${workflowId}/executions/latest`, undefined, token);
     check('latest execution', latest.json?.data?.executionId === result.executionId);
@@ -136,11 +184,45 @@ async function main(): Promise<void> {
     const streamText = await stream.text();
     check('sse stream', streamText.includes('event: WORKFLOW_START') && streamText.includes('event: WORKFLOW_COMPLETE'), streamText.slice(0, 300));
 
+    const agentFlow = {
+      nodes: [
+        { id: 'ai', type: 'input', data: { type: 'input' } },
+        {
+          id: 'ag',
+          type: 'react_agent',
+          data: {
+            type: 'react_agent',
+            provider: 'deepseek',
+            apiUrl: `http://127.0.0.1:${stubPort}`,
+            apiKey: 'stub-key',
+            model: 'stub',
+            prompt: '{{q}}',
+            inputParams: [{ name: 'q', type: 'reference', referenceNode: 'ai.input' }],
+            agentStrategy: 'react',
+            maxSteps: 2,
+            tools: [],
+          },
+        },
+        { id: 'ao', type: 'output', data: { type: 'output' } },
+      ],
+      edges: [
+        { id: 'ae1', source: 'ai', target: 'ag' },
+        { id: 'ae2', source: 'ag', target: 'ao' },
+      ],
+    };
+    const agentCreated = await request('POST', '/api/workflows', { name: 'smoke-agent', flowData: JSON.stringify(agentFlow) }, token);
+    const agentId = agentCreated.json?.data?.id;
+    const agentExecuted = await request('POST', `/api/workflows/${agentId}/execute`, { inputData: 'hello' }, token);
+    const agentResult = agentExecuted.json?.data || {};
+    check('agent node executes without tools', agentResult.status === 'SUCCESS' && JSON.parse(agentResult.outputData || '{}').output === 'agent-ok', agentExecuted.text.slice(0, 400));
+    await request('DELETE', `/api/workflows/${agentId}`, undefined, token);
+
     const deleted = await request('DELETE', `/api/workflows/${workflowId}`, undefined, token);
     check('delete workflow', deleted.json?.code === 200);
     const hidden = await request('GET', `/api/workflows/${workflowId}`, undefined, token);
     check('deleted workflow hidden', hidden.json?.code === 500);
   } finally {
+    stub.close();
     child.kill('SIGTERM');
   }
 

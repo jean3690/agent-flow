@@ -515,7 +515,6 @@ export class ExecutorRegistry {
         : [];
     if (text(data.knowledgeBaseId) && !toolNames.includes('knowledge_retrieve')) toolNames.push('knowledge_retrieve');
     if (toolNames.includes('web_search') && !toolNames.includes('web_fetch')) toolNames.push('web_fetch');
-    if (!toolNames.length) throw new Error('ReAct Agent 至少需要启用一个工具');
 
     const systemPrompt = this.reActSystemPrompt(data, config, toolNames);
     const trace: any[] = [];
@@ -569,7 +568,11 @@ export class ExecutorRegistry {
       const skill = this.skills.get(config.skillName);
       if (skill) parts.push(`当前节点关联 Skill: ${skill.name}\n${skill.description}\n\n`);
     }
-    parts.push('可用工具:\n');
+    if (!toolNames.length) {
+      parts.push('当前没有启用任何工具，请直接返回 final_answer，不要尝试调用工具。\n');
+    } else {
+      parts.push('可用工具:\n');
+    }
     const descriptions: Record<string, [string, string]> = {
       knowledge_retrieve: ['从知识库检索相关内容', '{"query":"string"}'],
       memory_retrieve: ['召回长期记忆', '{"query":"string"}'],

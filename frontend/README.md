@@ -4,15 +4,15 @@ AI Agent 流图执行面板前端项目
 
 ## 技术栈
 
-- React 18
+- Vue 3
 - TypeScript
 - Vite
-- ReactFlow (流程图编辑器)
-- Ant Design (UI 组件库)
+- Vue Flow (流程图编辑器)
+- Ant Design Vue (UI 组件库)
 - Tailwind CSS (样式框架)
-- Zustand (状态管理)
+- Pinia (状态管理)
 - Axios (HTTP 客户端)
-- React Router (路由管理)
+- Vue Router (路由管理)
 
 ## 快速开始
 
@@ -43,6 +43,8 @@ VITE_API_BASE_URL=http://localhost:8084
 npm run build
 ```
 
+构建产物做了体积优化：页面按路由动态 import 懒加载，Ant Design Vue 组件按需自动引入（unplugin-vue-components），Vue / Vue Flow 单独分包，调试抽屉按需加载。Nginx 配置已开启 gzip 压缩。
+
 ## 项目结构
 
 ```
@@ -50,26 +52,23 @@ src/
 ├── api/              # API 接口
 ├── pages/            # 页面组件
 ├── components/       # 可复用组件
-├── store/            # 状态管理
+├── router/           # 路由配置
+├── stores/           # Pinia 状态管理
 ├── utils/            # 工具函数
-├── App.tsx           # 根组件
-└── main.tsx          # 入口文件
+├── App.vue           # 根组件
+└── main.ts           # 入口文件
 ```
 
 ## 功能特性
 
-### 已完成
 - ✅ 用户登录/登出
 - ✅ 路由守卫
 - ✅ 认证状态管理
 - ✅ API 请求封装
-
-### 开发中
-- 🚧 工作流编辑器
-- 🚧 节点面板
-- 🚧 画布区域
-- 🚧 调试抽屉
-- 🚧 节点配置面板
+- ✅ 工作流编辑器（Vue Flow）
+- ✅ 节点面板与节点配置
+- ✅ 调试抽屉（SSE 实时执行）
+- ✅ 知识库与 MCP 工具管理
 
 ## 环境变量
 

@@ -5,7 +5,7 @@ import logging
 import re
 from typing import Any, Callable, Optional
 
-import httpx
+from openai import OpenAI, OpenAIError
 
 logger = logging.getLogger("agentflow.llm")
 
@@ -135,6 +135,12 @@ def _usage_from(payload: dict) -> tuple[int, int, int]:
     return input_value, output_value, total_value
 
 
+def _client_base_url(provider: str, api_url: Optional[str]) -> str:
+    if provider == "volcengine_agent_plan":
+        return normalize_agent_plan_base_url(api_url) + "/api/plan/v3"
+    return normalize_base_url(api_url) + "/v1"
+
+
 def chat_completion(
     provider: str,
     api_url: str,
@@ -146,65 +152,50 @@ def chat_completion(
 ) -> dict:
     normalized_provider = normalize_provider(provider)
     normalized_model = normalize_model(normalized_provider, model)
-    endpoint = chat_endpoint(normalized_provider, api_url)
-    payload = {
-        "model": normalized_model,
-        "messages": messages,
-        "temperature": 0.7 if temperature is None else temperature,
-        "stream": on_chunk is not None,
-    }
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json",
-    }
+    client = OpenAI(
+        api_key=api_key or "EMPTY",
+        base_url=_client_base_url(normalized_provider, api_url),
+        timeout=120.0,
+        max_retries=1,
+    )
+    temperature_value = 0.7 if temperature is None else temperature
 
     if on_chunk is not None:
         accumulated = ""
-        with httpx.Client(timeout=httpx.Timeout(120.0, connect=15.0)) as client:
-            with client.stream("POST", endpoint, json=payload, headers=headers) as response:
-                if response.status_code < 200 or response.status_code >= 300:
-                    text = response.read().decode("utf-8", errors="ignore")
-                    raise RuntimeError(f"LLM 调用失败, HTTP {response.status_code}: {text}")
-                for line in response.iter_lines():
-                    if not line:
-                        continue
-                    if line.startswith("data:"):
-                        line = line[5:].strip()
-                    if not line or line == "[DONE]":
-                        if line == "[DONE]":
-                            break
-                        continue
-                    try:
-                        chunk_payload = json.loads(line)
-                    except json.JSONDecodeError:
-                        continue
-                    choices = chunk_payload.get("choices") or []
-                    if not choices:
-                        continue
-                    delta = choices[0].get("delta") or {}
-                    chunk = _content_to_text(delta.get("content"))
-                    if chunk:
-                        accumulated += chunk
-                        on_chunk(chunk, accumulated)
+        try:
+            stream = client.chat.completions.create(
+                model=normalized_model,
+                messages=messages,
+                temperature=temperature_value,
+                stream=True,
+            )
+            for chunk in stream:
+                choices = chunk.choices or []
+                if not choices:
+                    continue
+                delta_text = _content_to_text(getattr(choices[0].delta, "content", None))
+                if delta_text:
+                    accumulated += delta_text
+                    on_chunk(delta_text, accumulated)
+        except OpenAIError as exc:
+            raise RuntimeError(f"LLM 调用失败: {exc}") from exc
         return {"content": accumulated, "inputTokens": 0, "outputTokens": 0, "totalTokens": 0}
 
-    with httpx.Client(timeout=httpx.Timeout(120.0, connect=15.0)) as client:
-        response = client.post(endpoint, json=payload, headers=headers)
-
-    if response.status_code < 200 or response.status_code >= 300:
-        raise RuntimeError(f"LLM 调用失败, HTTP {response.status_code}: {response.text[:800]}")
-
     try:
-        result = json.loads(response.text)
-    except json.JSONDecodeError as exc:
-        raise RuntimeError(f"LLM 返回内容无法解析: {response.text[:500]}") from exc
+        response = client.chat.completions.create(
+            model=normalized_model,
+            messages=messages,
+            temperature=temperature_value,
+            stream=False,
+        )
+    except OpenAIError as exc:
+        raise RuntimeError(f"LLM 调用失败: {exc}") from exc
 
-    choices = result.get("choices") or []
-    content = ""
-    if choices:
-        message = choices[0].get("message") or {}
-        content = _content_to_text(message.get("content"))
-    input_tokens, output_tokens, total_tokens = _usage_from(result)
+    content = _content_to_text(response.choices[0].message.content) if response.choices else ""
+    usage = response.usage
+    input_tokens = int(getattr(usage, "prompt_tokens", 0) or 0)
+    output_tokens = int(getattr(usage, "completion_tokens", 0) or 0)
+    total_tokens = int(getattr(usage, "total_tokens", 0) or (input_tokens + output_tokens))
     return {
         "content": content,
         "inputTokens": input_tokens,

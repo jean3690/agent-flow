@@ -178,6 +178,35 @@ with client:
     check("langgraph execute", response.json()["data"]["status"] == "SUCCESS", str(response.json())[:300])
     check("langgraph output", json.loads(response.json()["data"]["outputData"] or "{}").get("output") == "lg")
 
+    cond_langflow = {
+        "nodes": [
+            {"id": "lg-in", "type": "input", "data": {"type": "input"}},
+            {"id": "lg-cond", "type": "condition", "data": {"type": "condition", "conditions": [
+                {"id": "condition_0", "field": "input", "operator": "contains", "value": "yes"},
+            ]}},
+            {"id": "lg-yes", "type": "output", "data": {"type": "output"}},
+            {"id": "lg-no", "type": "output", "data": {"type": "output"}},
+        ],
+        "edges": [
+            {"id": "lg-e1", "source": "lg-in", "target": "lg-cond"},
+            {"id": "lg-e2", "source": "lg-cond", "target": "lg-yes", "sourceHandle": "condition_0"},
+            {"id": "lg-e3", "source": "lg-cond", "target": "lg-no", "sourceHandle": "default"},
+        ],
+    }
+    response = client.post(
+        "/api/workflows",
+        headers=headers,
+        json={"name": "lang-cond", "flowData": json.dumps(cond_langflow), "engineType": "langgraph"},
+    )
+    lang_cond_id = response.json()["data"]["id"]
+    response = client.post(f"/api/workflows/{lang_cond_id}/execute", headers=headers, json={"inputData": "yes please"})
+    lang_node_ids = [item["nodeId"] for item in response.json()["data"]["nodeResults"]]
+    check(
+        "langgraph condition branch",
+        response.json()["data"]["status"] == "SUCCESS" and "lg-yes" in lang_node_ids and "lg-no" not in lang_node_ids,
+        str(lang_node_ids),
+    )
+
     condflow = {
         "nodes": [
             {"id": "in-c", "type": "input", "data": {"type": "input"}},

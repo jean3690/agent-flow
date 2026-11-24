@@ -12,7 +12,7 @@ src/
 ├── common/index.ts         # Result、JSON、时间、 provider 归一化
 ├── database/               # TypeORM 数据源与实体
 ├── auth/                   # JWT、刷新令牌、认证接口
-├── engine/                 # DAG / LangGraph 等价引擎、执行器、SSE 事件
+├── engine/                 # DAG 引擎 + LangGraph 状态图引擎、执行器、SSE 事件
 ├── modules/controllers.ts  # 所有 REST Controller
 └── services/               # LLM、Agent Plan、知识库、MCP、媒体、Skills
 tests/smoke.ts              # 23 项端到端冒烟测试（sqljs 内存库）
@@ -62,6 +62,7 @@ docker compose --profile full up -d --build   # 额外启动前端（:5174）
 
 - 接口路径、`{code,message,data}` 响应体、JWT（HS256/384/512）、SSE 事件名与负载一致
 - 支持 DAG / `engineType=langgraph` 两种执行模式、条件分支跳过、执行快照与断点续跑
+- `engineType=langgraph` 由 `@langchain/langgraph` 的 `StateGraph` 执行，条件节点用条件边路由；LLM 调用走 `@langchain/openai` 的 `ChatOpenAI`
 - 支持全部节点：输入/输出/条件、LLM/ReAct、TTS、图片/视频生成、知识库、记忆、联网搜索/抓取、视觉质检
 - 数据库名 `agent_flow`、对象存储 bucket `agent-flow`、环境变量前缀 `AGENTFLOW_*`
 

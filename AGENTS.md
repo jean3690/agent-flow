@@ -18,7 +18,7 @@ cd backend
 ./mvnw test -Dtest=ClassName#methodName  # Run single test method
 ```
 
-### Frontend (React + Vite)
+### Frontend (Vue 3 + Vite)
 ```bash
 cd frontend
 npm install                         # Install dependencies
@@ -78,20 +78,28 @@ mysql -u root -p < backend/src/main/resources/schema.sql
 ### Frontend Structure (`frontend/src/`)
 
 **Core Components:**
-- `components/FlowCanvas.tsx`: ReactFlow-based visual workflow editor
-- `components/NodePanel.tsx`: Draggable node palette (LLM/Tool categories)
-- `components/DebugDrawer.tsx`: Execution debugging panel with real-time logs and results
-- `components/AudioPlayer.tsx`: Audio playback component for TTS output
-- `components/SkillSelector.tsx`: Skill selection component for applying skills in workflows
+- `components/FlowCanvas.vue`: Vue Flow based visual workflow editor
+- `components/WorkflowNodeCard.vue`: Custom Vue Flow node renderer (card layout and handles)
+- `components/NodePanel.vue`: Draggable node palette (LLM/Tool categories)
+- `components/DebugDrawer.vue`: Execution debugging panel with real-time logs and results
+- `components/DebugValue.vue` / `components/RichOutput.vue`: Markdown and structured output rendering
+- `components/AudioPlayer.vue`: Audio playback component for TTS output
+- `components/SkillSelector.vue`: Skill selection component for applying skills in workflows
+- `components/LLMConfigModal.vue`: Global model configuration management
 
 **Pages:**
-- `pages/LoginPage.tsx`: Authentication page
-- `pages/MainPage.tsx`: Workflow list management
-- `pages/EditorPage.tsx`: Main workflow editor with canvas, node panel, and debug drawer
+- `pages/LoginPage.vue`: Authentication page
+- `pages/EditorPage.vue`: Main workflow editor with canvas, node panel, and debug drawer
+- `pages/KnowledgePage.vue`: Knowledge base management, chunk previews, and retrieval tests
+- `pages/McpToolPage.vue`: MCP tool configuration and testing
 
-**State Management (Zustand):**
-- `store/authStore.ts`: User authentication state (token, user info)
-- `store/workflowStore.ts`: Workflow editing state (nodes, edges, selected workflow)
+**Routing:**
+- `router/index.ts`: Vue Router routes (`/login`, `/editor`, `/editor/:id`, `/knowledge`, `/mcp-tools`)
+
+**State Management (Pinia):**
+- `stores/auth.ts`: User authentication state (token, user info)
+- `stores/workflow.ts`: Workflow editing state (nodes, edges, selected workflow)
+- `stores/llmConfig.ts`: Global LLM configuration cache
 
 **API Layer:**
 - `api/`: Axios-based API client for backend communication
@@ -108,7 +116,7 @@ Key features:
 
 ## Workflow Execution Flow
 
-1. User designs workflow in ReactFlow canvas (frontend)
+1. User designs workflow in Vue Flow canvas (frontend)
 2. Frontend serializes nodes/edges to JSON and saves via API
 3. Backend stores workflow config in `workflow.flow_data`
 4. On execution:
@@ -122,15 +130,15 @@ Key features:
 ## Key Technologies
 
 - **Backend**: Spring Boot 3.4.1, Java 21, MyBatis-Plus 3.5.5, MySQL 8.0+, FastJSON2, Spring AI 1.0.0-M5, LangGraph4j 1.8.0-beta3, JJWT 0.12.7
-- **Frontend**: React 18, TypeScript 5.6, Vite 6, ReactFlow (@xyflow/react), Ant Design 6, Tailwind CSS 4, Zustand 5
+- **Frontend**: Vue 3.5, TypeScript 5.6, Vite 6, Vue Flow (@vue-flow/core), Ant Design Vue 4, Tailwind CSS 4, Pinia 2
 - **Authentication**: JWT-based auth (default: admin/admin123, configurable via env)
 - **API Docs**: Swagger UI at http://localhost:8084/swagger-ui.html
 
 ## Development Notes
 
 - Backend API requires JWT token in `Authorization` header (Bearer scheme)
-- Frontend stores token in Zustand store and localStorage
-- ReactFlow node types must match backend `NodeExecutor` implementations
+- Frontend stores token in Pinia store and localStorage
+- Vue Flow node types (`nodeTypes` in `FlowCanvas.vue`) must match backend `NodeExecutor` implementations
 - Node executors follow a common interface: `execute(WorkflowNode node, Map<String, Object> input) -> Map<String, Object>`
 - DAG engine uses Kahn's algorithm for topological sort and DFS for cycle detection
 - LangGraph engine uses StateGraph with AsyncNodeAction for async execution

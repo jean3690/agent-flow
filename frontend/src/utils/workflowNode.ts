@@ -1,39 +1,39 @@
-import { Node } from '@xyflow/react';
+import type { Node } from '@vue-flow/core'
 
-const REACT_FLOW_NODE_TYPE = 'workflow';
+const WORKFLOW_NODE_TYPE = 'workflow'
 
 const getFallbackLabel = (nodeType: string, nodeId: string) => {
   switch (nodeType) {
     case 'input':
-      return '输入';
+      return '输入'
     case 'output':
-      return '输出';
+      return '输出'
     case 'tts':
-      return '语音合成';
+      return '语音合成'
     case 'llm':
-      return '大模型';
+      return '大模型'
     case 'react_agent':
-      return 'ReAct Agent';
+      return 'ReAct Agent'
     default:
-      return nodeType || nodeId;
+      return nodeType || nodeId
   }
-};
+}
 
 export const getWorkflowNodeType = (node: Pick<Node, 'type' | 'data'>) => {
-  const dataType = typeof node.data?.type === 'string' ? node.data.type : '';
+  const dataType = typeof node.data?.type === 'string' ? node.data.type : ''
   if (dataType) {
-    return dataType;
+    return dataType
   }
 
-  return node.type && node.type !== REACT_FLOW_NODE_TYPE ? node.type : '';
-};
+  return node.type && node.type !== WORKFLOW_NODE_TYPE ? node.type : ''
+}
 
 export const normalizeWorkflowNode = (node: Node): Node => {
-  const workflowNodeType = getWorkflowNodeType(node);
+  const workflowNodeType = getWorkflowNodeType(node)
 
   return {
     ...node,
-    type: REACT_FLOW_NODE_TYPE,
+    type: WORKFLOW_NODE_TYPE,
     data: {
       ...node.data,
       type: workflowNodeType,
@@ -41,10 +41,10 @@ export const normalizeWorkflowNode = (node: Node): Node => {
         ? node.data.label
         : getFallbackLabel(workflowNodeType, node.id),
     },
-  };
-};
+  }
+}
 
-export const normalizeWorkflowNodes = (nodes: Node[]) => nodes.map(normalizeWorkflowNode);
+export const normalizeWorkflowNodes = (nodes: Node[]) => nodes.map(normalizeWorkflowNode)
 
 export const serializeWorkflowNodes = (nodes: Node[]) =>
   nodes.map((node) => ({
@@ -55,12 +55,12 @@ export const serializeWorkflowNodes = (nodes: Node[]) =>
       ...node.data,
       type: getWorkflowNodeType(node) || node.type,
     },
-  }));
+  }))
 
 export const createDefaultWorkflowNodes = (): Node[] => [
   {
     id: 'input-default',
-    type: REACT_FLOW_NODE_TYPE,
+    type: WORKFLOW_NODE_TYPE,
     position: { x: 250, y: 100 },
     data: {
       label: '输入节点',
@@ -69,7 +69,7 @@ export const createDefaultWorkflowNodes = (): Node[] => [
   },
   {
     id: 'output-default',
-    type: REACT_FLOW_NODE_TYPE,
+    type: WORKFLOW_NODE_TYPE,
     position: { x: 250, y: 400 },
     data: {
       label: '输出节点',
@@ -78,4 +78,4 @@ export const createDefaultWorkflowNodes = (): Node[] => [
       responseContent: '',
     },
   },
-];
+]

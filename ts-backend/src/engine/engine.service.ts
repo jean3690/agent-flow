@@ -3,6 +3,7 @@ import { AppDataSource } from '../database/data-source';
 import { ExecutionRecord, ExecutionSnapshot, ExecutionVariable, Workflow } from '../database/entities';
 import { FlowNode, parseWorkflow, topologicalSort, buildEdgeIndexes, markSkipped } from './parser';
 import { ExecutorRegistry, Progress } from './executors';
+import { GraphRunResult, runWorkflowGraph } from './graph';
 import * as events from './events';
 import { asJsonString, jdump, jload, nowDate, stripRuntime, text, toInt } from '../common';
 
@@ -357,108 +358,45 @@ export class EngineService {
 
   private async langgraph(workflow: Workflow, inputData: string, onEvent?: EventCallback): Promise<any> {
     const started = Date.now();
-    let status = 'SUCCESS';
-    let errorMessage: string | null = null;
     if (onEvent) onEvent(events.workflowStart(null));
+
+    let result: GraphRunResult;
     try {
       const config = parseWorkflow(workflow.flowData);
-      const targets = new Set(config.edges.map((edge) => edge.target));
-      const entry = config.nodes.find((node) => !targets.has(node.id)) || config.nodes[0];
-      const reachable = new Set<string>();
-      const stack = entry ? [entry.id] : [];
-      const adjacency = new Map<string, string[]>();
-      config.edges.forEach((edge) => {
-        if (!adjacency.has(edge.source)) adjacency.set(edge.source, []);
-        adjacency.get(edge.source)!.push(edge.target);
-      });
-      while (stack.length) {
-        const id = stack.pop()!;
-        if (reachable.has(id)) continue;
-        reachable.add(id);
-        stack.push(...(adjacency.get(id) || []));
-      }
-      const ordered = topologicalSort(config.nodes, config.edges).filter((node) => reachable.has(node.id));
-      const state: any = {
-        currentInput: { input: inputData },
-        nodeOutputs: {},
-        status: 'RUNNING',
-      };
-      for (const node of ordered) {
-        const nodeStarted = Date.now();
-        if (onEvent) onEvent(events.nodeStart(node.id, node.type));
-        let currentInput = state.currentInput;
-        if (node.type === 'output') currentInput = { ...currentInput, __nodeOutputs__: state.nodeOutputs };
-        try {
-          const progress: Progress | undefined = onEvent
-            ? (message, data) => onEvent(events.nodeProgress(node.id, node.type, message, data))
-            : undefined;
-          const output = await this.executors.get(node.type)(node, currentInput, progress);
-          const duration = Date.now() - nodeStarted;
-          state.nodeOutputs[node.id] = output;
-          state.currentInput = output;
-          if (onEvent) onEvent(events.nodeSuccess(node.id, node.type, { input: currentInput, output, duration }, duration));
-        } catch (error: any) {
-          state.status = 'FAILED';
-          state.errorMessage = String(error?.message || error);
-          if (onEvent) onEvent(events.nodeError(node.id, node.type, String(error?.message || error)));
-        }
-      }
-      if (state.status !== 'SUCCESS' && state.status !== 'RUNNING') {
-        status = 'FAILED';
-        errorMessage = state.errorMessage;
-      }
-      const outputData = jdump(state.currentInput);
-      const nodeResults = Object.entries(state.nodeOutputs).map(([nodeId, output]) => ({
-        nodeId,
-        nodeName: config.nodes.find((node) => node.id === nodeId)?.type || nodeId,
-        status: 'SUCCESS',
-        output: jdump(output),
-      }));
-      const duration = Date.now() - started;
-      const record = this.recordRepo.create({
-        flowId: workflow.id,
-        inputData: jdump({ input: inputData }),
-        outputData,
-        status,
-        nodeResults: jdump(nodeResults),
-        errorMessage,
-        duration,
-        executedAt: nowDate(),
-        deleted: 0,
-      } as any) as unknown as ExecutionRecord;
-      await this.recordRepo.save(record);
-      if (onEvent) onEvent(events.workflowComplete(status, state.currentInput, duration));
-      return {
-        executionId: record.id,
-        status,
-        inputData: record.inputData,
-        nodeResults,
-        outputData,
-        duration,
-        errorMessage: null,
-      };
+      result = await runWorkflowGraph(config, inputData, this.executors, onEvent);
     } catch (error: any) {
-      const duration = Date.now() - started;
-      const record = this.recordRepo.create({
-        flowId: workflow.id,
-        inputData: jdump({ input: inputData }),
+      result = {
         status: 'FAILED',
         errorMessage: String(error?.message || error),
-        duration,
-        executedAt: nowDate(),
-        deleted: 0,
-      } as any) as unknown as ExecutionRecord;
-      await this.recordRepo.save(record);
-      if (onEvent) onEvent(events.workflowComplete('FAILED', String(error?.message || error), duration));
-      return {
-        executionId: record.id,
-        status: 'FAILED',
-        inputData: asJsonString(record.inputData),
         nodeResults: [],
-        outputData: null,
-        duration,
-        errorMessage: String(error?.message || error),
+        finalOutput: {},
       };
     }
+
+    const duration = Date.now() - started;
+    const outputData = jdump(stripRuntime(result.finalOutput));
+    const record = this.recordRepo.create({
+      flowId: workflow.id,
+      inputData: jdump({ input: inputData }),
+      outputData,
+      status: result.status,
+      nodeResults: jdump(result.nodeResults),
+      errorMessage: result.errorMessage,
+      duration,
+      executedAt: nowDate(),
+      deleted: 0,
+    } as any) as unknown as ExecutionRecord;
+    await this.recordRepo.save(record);
+
+    if (onEvent) onEvent(events.workflowComplete(result.status, result.finalOutput, duration));
+    return {
+      executionId: record.id,
+      status: result.status,
+      inputData: record.inputData,
+      nodeResults: result.nodeResults,
+      outputData,
+      duration,
+      errorMessage: result.errorMessage,
+    };
   }
 }
